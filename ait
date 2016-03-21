@@ -429,6 +429,7 @@ function initialize_twrp {
 
 
 function wait_for_adb {
+  output "If your device is encrypted, unlock it."
   output "Waiting for adb..."
   while 
     adb_count=$(count_adb_devices)
