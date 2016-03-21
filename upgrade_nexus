@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# This program is free software. It comes without any warranty, to the extent
+# permitted by applicable law. You can redistribute it and/or modify it under
+# the terms of the Do What The Fuck You Want To Public License, Version 2, as
+# published by Sam Hocevar. See WTFPL.txt or http://www.wtfpl.net/ for more
+# details.
+
+source ait
+
+function main {
+  test 1 -eq $start_phone_count         || fail "I expect one device, but found ${start_phone_count} (${start_adb_count} adb and ${start_fastboot_count} fastboot)."
+  greet                                 || fail "Failed to greet the user."
+  backup_data                           || fail "Failed to backup data."
+  download_latest_stock_image           || fail "Failed to download stock image."
+  download_latest_twrp_image            || fail "Failed to download TWRP recovery image."
+  download_supersu                      || fail "Failed to download SuperSU."
+  unpack_image                          || fail "Failed to unpack image."
+  install_image                         || fail "Failed to install image."
+  install_twrp_image                    || fail "Failed to install TWRP recovery image."
+  restore_data                          || fail "Failed to restore application data."
+  output                                "Success!"
+}
+
+
+main
