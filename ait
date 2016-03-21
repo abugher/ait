@@ -415,6 +415,7 @@ function initialize_twrp {
     reboot_from_adb_to_recovery                 || fail "Failed to reboot from adb to recovery."
   fi
 
+  prompt        "If your device is encrypted, unlock it; then hit Enter."
   prompt        "Accept the proposal to modify the system volume, then hit Enter."
   push_supersu  || fail "Failed to push SuperSU."
   output        "Hit \"Install\", then scroll down and, under /sdcard, select:"
