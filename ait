@@ -451,7 +451,6 @@ function initialize_twrp {
   prompt        "Then hit Enter."
   prompt        "Swipe to confirm, then hit Enter."
   prompt        "Wait for install to finish.  Hit \"Reboot System\", then hit Enter."
-  prompt        "Do NOT allow TWRP to attempt to root the phone.  Hit Enter."
   wait_for_adb
 }
 
