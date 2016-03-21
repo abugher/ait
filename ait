@@ -130,6 +130,8 @@ function restore_data {
     reboot_from_fastboot_to_adb || fail "Failed to reboot from fastboot to adb."
   fi
 
+  wait_for_adb
+
   while true; do
     output "Restoring data from:  $backup_file"
     adb restore $backup_file  || fail "Failed:  adb restore ${backup_file}"
