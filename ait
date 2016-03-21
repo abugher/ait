@@ -418,7 +418,7 @@ function initialize_twrp {
   prompt        "If your device is encrypted, unlock it; then hit Enter."
   prompt        "Accept the proposal to modify the system volume, then hit Enter."
   push_supersu  || fail "Failed to push SuperSU."
-  output        "Tap \"Install\", then hit Enter."
+  prompt        "Tap \"Install\", then hit Enter."
   output        "Scroll down and, under /sdcard, and select:"
   output        "  ${supersu_file}"
   prompt        "Then hit Enter."
