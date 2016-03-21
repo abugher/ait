@@ -163,64 +163,33 @@ function greet {
   cat << EOF
 | Requirements:
 |
-|   Your bootloader must be unlocked.
+|   The device must be connected to the computer by USB.
 |
-|   Your phone must have a working Android installation.
+|   Device:
 |
-|   adb and fastboot commands must be available.  On Debian Jessie, get
-|   these packages:
-|     android-tools-adb
-|     android-tools-fastboot
+|     The bootloader must be unlocked.
 |
-|   Developer options must be enabled:
-|     Settings --> About Phone --> Build Number --> tap a lot
+|     Developer options must be enabled:
+|       Settings --> About Phone --> Build Number --> tap a lot
 |
-|   USB debugging must be enabled:
-|     Settings --> Developer --> USB Debugging
+|     USB debugging must be enabled:
+|       Settings --> Developer --> USB Debugging
 |
-|   The phone must be connected to this host by USB.
+|     Twilight and other screen overlay apps will interfere with
+|     administrative prompts, so those apps should be disabled.
 |
-| Itinerary:
+|   Computer:
 |
-|   I will backup application and shared data from the phone.
-| 
-|   I will download the latest stock image for ${device_friendly_name}, code
-|   named ${device_code_name}.  
-|   
-|   I will install the image.  
-|   
-|   You will give the phone wifi and google credentials.  
-|   
-|   The phone will restore your apps.  This will take a while.
+|     adb and fastboot commands must be available.  On Debian Jessie, get
+|     these packages:
+|       android-tools-adb
+|       android-tools-fastboot
 |
-|   You will install any unapproved apps you use.
-|
-|   You will re-enable USB debugging.
-|
-|   I will (conditionally) install a boot image modified with selinux policy for hacked 'su'.
-|
-|   I will install TWRP recovery.
-|
-|   You will answer a prompt in TWRP to allow modification of system volume.
-|
-|   You will hit "Reboot", then "System", in TWRP.
-|
-|   You will accept the offer from TWRP to install SuperSU and root the phone.
-|   
-|   I will restore application and shared data to the phone.  
-|
-|   If the SuperSU app is not installed, accept the prompt to install it.
-|
-| Be advised:
-|
-|   Do not plug or unplug any USB devices, especially Android devices, during
-|   this process.  (We count devices, and that will throw off the count.)
-|
+|     Do not plug or unplug any USB devices, especially Android devices,
+|     during this process.  (The wrong thing might get imaged.)
 | 
 EOF
 
-prompt "If you use Twilight, turn it off, then hit Enter."
-  
 }
 
 
