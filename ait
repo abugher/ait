@@ -290,7 +290,7 @@ function cycle_adb {
 
 function unpack_image {
   output "Unpacking image."
-  tar xf $image_file                    || fail "Failed to unpack image."
+  tar xf $image_file                    || fail "Failed to unpack image:  ${image_file}"
   output "Image unpacked."
 }
 
