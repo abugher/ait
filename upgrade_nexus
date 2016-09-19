@@ -10,17 +10,30 @@ source ait
 
 function main {
   test 1 -eq $start_phone_count         || fail "I expect one device, but found ${start_phone_count} (${start_adb_count} adb and ${start_fastboot_count} fastboot)."
-  greet                                 || fail "Failed to greet the user."
-  backup_data                           || fail "Failed to backup data."
-  download_latest_stock_image           || fail "Failed to download stock image."
-  download_latest_twrp_image            || fail "Failed to download TWRP recovery image."
-  download_supersu                      || fail "Failed to download SuperSU."
+  #backup_data                           || fail "Failed to backup data."
+  #download_latest_stock_image           || fail "Failed to download stock image."
+  #download_latest_twrp_image            || fail "Failed to download TWRP recovery image."
+  download_magisk                       || fail "Failed to download Magisk."
+  #download_superuser                    || fail "Failed to download superuser."
   unpack_image                          || fail "Failed to unpack image."
-  install_image                         || fail "Failed to install image."
-  install_twrp_image                    || fail "Failed to install TWRP recovery image."
-  restore_data                          || fail "Failed to restore application data."
+  #install_image                         || fail "Failed to install image."
+  #erase_boot                            || fail "Failed to erase boot."
+  #write_boot                            || fail "Failed to overwrite boot."
+  #erase_system                          || fail "Failed to erase system."
+  #write_system                          || fail "Failed to overwrite system."
+  #install_twrp_image                    || fail "Failed to install TWRP recovery image."
+  install_magisk                        || fail "Failed to install Magisk."
+  install_superuser                     || fail "Failed to install superuser."
+  # Leave fastboot.
+  reboot_from_adb_to_adb                || fail "Failed to reboot from adb to adb."
+  #restore_data                          || fail "Failed to restore application data."
   output                                "Success!"
 }
+
+
+if test '-h' == "${1}" || test '--help' == "${1}"; then
+  requirements                          || fail "Failed to state requirements."
+fi
 
 
 main
