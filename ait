@@ -6,12 +6,14 @@
 # published by Sam Hocevar. See WTFPL.txt or http://www.wtfpl.net/ for more
 # details.
 
+# expand_aliases makes aliases work.  It's not set in scripts by default.
 shopt -s expand_aliases
 
 source device.conf
 
-now="$(date "+%Y-%m-%d_%H:%M:%S")"
-backup_file="${backup_dir}/${now}.ab"
+start_time="$(date "+%Y-%m-%d_%H:%M:%S")"
+
+backup_file="${backup_dir}/${start_time}.ab"
 # Options for Android 5.
 backup_options_5="-f '${backup_file}' -apk -all -nosystem -shared"
 # Options for Android 6.
@@ -35,64 +37,71 @@ function prompt {
 }
 
 
+# 'fail' is an alias, not a function, so that the 'return' statement takes
+# effect in the context of the calling function, instead of just returning from
+# the 'fail' function. 
 alias fail='{ read message; error_output "${message}"; return 1; } <<<'
 
 
-function reboot_from_adb_to_adb {
-  output        "Rebooting phone from adb to adb."
+function reboot_from_device_to_device {
+  output        "Rebooting device from android to android."
   adb reboot \
-    || fail     "Failed to reboot from adb to adb."
+    || fail     "Failed to reboot from android to android."
   wait_for_adb
 }
 
 
-function reboot_from_adb_to_fastboot {
-  output        "Rebooting phone from adb to fastboot."
+function reboot_from_fastboot_to_device {
+  output        "Rebooting device from fastboot to android."
+  fastboot reboot \
+    || fail     "Failed to reboot from fastboot to android."
+  wait_for_adb
+}
+
+
+function boot_device {
+  state="$(adb get-state)"
+  output        "DEBUG:  State:  ${state}"
+  case "${state}" in
+    'recovery')
+      reboot_from_recovery_to_device \
+        || fail         "Failed to reboot from recovery to android."
+      ;;
+    'device')
+      # device == android
+      output            "Device is already booted."
+      ;;
+    'unknown')
+      # unknown == bootloader, aka fastboot
+      reboot_from_fastboot_to_device \
+        || fail         "Failed to reboot from fastboot to android."
+      ;;
+    *)
+      fail              "Unknown device state:  '${state}'"
+      ;;
+  esac
+}
+
+
+function reboot_from_device_to_fastboot {
+  output        "Rebooting device from android to fastboot."
   adb reboot-bootloader \
-    || fail     "Failed to reboot from adb to fastboot."
+    || fail     "Failed to reboot from android to fastboot."
   wait_for_fastboot
 }
 
 
-function reboot_from_adb_to_recovery {
-  output        "Rebooting phone from adb to recovery."
-  adb reboot recovery \
-    || fail     "Failed to reboot from adb to recovery."
-  prompt        "When the phone has rebooted to recovery, press Enter to continue."
-}
-
-
-function reboot_from_fastboot_to_adb {
-  output        "Rebooting phone from fastboot to adb."
-  fastboot reboot \
-    || fail     "Failed to reboot from fastboot to adb."
-  wait_for_adb
-}
-
-
 function reboot_from_fastboot_to_fastboot {
-  output        "Rebooting phone from fastboot to fastboot."
+  output        "Rebooting device from fastboot to fastboot."
   fastboot reboot-bootloader \
     || fail     "Failed to reboot from fastboot to fastboot."
   wait_for_fastboot
 }
 
 
-function reboot_from_fastboot_to_recovery {
-  reboot_from_fastboot_to_adb \
-    || fail     "Failed to reboot from fastboot to adb."
-  reboot_from_adb_to_recovery \
-    || fail     "Failed to reboot from adb to recovery."
-}
-
-function reboot_from_fastboot_to_recovery_by_user {
-  prompt        "Use the volume and power buttons to enter Recovery, then press Enter to continue."
-}
-
-
 function backup_data {
   if test 0 -eq $(count_adb_devices); then
-    reboot_from_fastboot_to_adb \
+    reboot_from_fastboot_to_device \
       || fail   "Failed to reboot from fastboot to adb."
   fi
 
@@ -136,7 +145,7 @@ function backup_data {
 
 function restore_data {
   if test 0 -eq $(count_adb_devices); then
-    reboot_from_fastboot_to_adb \
+    reboot_from_fastboot_to_device \
       || fail   "Failed to reboot from fastboot to adb."
   fi
 
@@ -165,78 +174,77 @@ function restore_data {
     esac
   done
   
-  reboot_from_adb_to_adb \
+  reboot_from_device_to_device \
     || fail     "Failed to reboot from adb to adb."
   output        "Restore successful."
 }
 
 
-function requirements {
-  cat << EOF
-| Requirements:
-|
-|   The device must be connected to the computer by USB.
-|
-|   Device:
-|
-|     The bootloader must be unlocked.
-|
-|     Developer options must be enabled:
-|       Settings --> About Phone --> Build Number --> tap a lot
-|
-|     USB debugging must be enabled:
-|       Settings --> Developer --> USB Debugging
-|
-|     Twilight and other screen overlay apps will interfere with
-|     administrative prompts, so those apps should be disabled.
-|
-|   Computer:
-|
-|     adb and fastboot commands must be available.  On Debian Jessie, get
-|     these packages:
-|       android-tools-adb
-|       android-tools-fastboot
-|
-|     Do not plug or unplug any USB devices, especially Android devices,
-|     during this process.  (The wrong thing might get imaged.)
-| 
-EOF
+function xsrf_token {
+  wget \
+    --save-cookies "${cookies}" \
+    -O - \
+    "${cookie_url}" \
+  > /dev/null
 
+  wget \
+    --save-cookies "${cookies}" \
+    --load-cookies "${cookies}" \
+    -O - \
+    "${image_list_url}"\
+  | grep '<meta name="xsrf_token"' \
+  | sed 's/^.*content="//;s/".*$//g'
+}
+
+
+function accept_tos {
+  wget \
+    --save-cookies "${cookies}" \
+    --load-cookies "${cookies}" \
+    -O - \
+    --post-data='notification_id=wall-nexus-image-tos' \
+    --header="X_XSRFToken: ${xsrf_token}" \
+    "${ack_url}" \
+  > /dev/null
 }
 
 
 function latest_listing {
+  accept_tos
+
   wget \
     -O - \
+    --load-cookies "${cookies}" \
+    --header="X_XSRFToken: ${xsrf_token}" \
     "${image_list_url}" \
     2> /dev/null
 }
 
 
 function latest_image_link {
-    echo -e "${latest_listing}" \
-    | grep "${device_code_name}"'.*'factory \
-    | tail -n 1 \
-    | awk -F '"' '{print $2}'
+  echo -e "${latest_listing}" \
+  | grep "${device_code_name}"'.*'factory \
+  | tail -n 1 \
+  | awk -F '"' '{print $2}'
 }
 
 
 function latest_image_version {
-    echo -e "${latest_listing}" \
-    | grep -B 1 "${device_code_name}"'.*'factory \
-    | tail -n 2 \
-    | head -n 1 \
-    | sed -E 's/^[^0-9]*([0-9.]+).*$/\1/'
+  echo -e "${latest_listing}" \
+  | grep -B 1 "${device_code_name}"'.*'factory \
+  | tail -n 2 \
+  | head -n 1 \
+  | sed -E 's/^[^0-9]*([0-9.]+).*$/\1/'
 }
 
 
 function latest_twrp_image_link {
-  image_list_url='https://dl.twrp.me/hammerhead/'
+  image_list_url="https://dl.twrp.me/${device_code_name}/"
 
   wget "${image_list_url}" -O - 2>/dev/null \
-    | awk -F '"' '/href.*dl\.twrp\.me/ {print $2}' \
-    | head -n 1 \
-    | sed 's/\.html$//'
+  | awk -F '"' '/href.*dl\.twrp\.me/ {print $2}' \
+  | head -n 1 \
+  | sed 's/\.html$//'
 }
 
 
@@ -333,8 +341,8 @@ function unpack_image {
 
 function install_image {
   if test 0 -eq $(count_fastboot_devices); then
-    reboot_from_adb_to_fastboot \
-      || fail   "Failed to reboot from adb to fastboot."
+    reboot_from_device_to_fastboot \
+      || fail   "Failed to reboot from android to fastboot."
   fi
 
   cd "${image_dir}" \
@@ -347,22 +355,22 @@ function install_image {
   install_script_expected='flash-all-expected.sh'
   grep -Ev ^#'|'^\$ $install_script > $install_script_reduced
   cat > "${install_script_expected}" << EOF
-fastboot flash bootloader bootloader-hammerhead-*.img
+fastboot flash bootloader bootloader-${device_code_name}-*.img
 fastboot reboot-bootloader
 sleep 5
-fastboot flash radio radio-hammerhead-*.img
+fastboot flash radio radio-${device_code_name}-*.img
 fastboot reboot-bootloader
 sleep 5
-fastboot -w update image-hammerhead-*.zip
+fastboot -w update image-${device_code_name}-*.zip
 EOF
 
   sed \
     -i \
-    '
-      s/bootloader-hammerhead-[a-z0-9]*\.img/bootloader-hammerhead-\*\.img/;
-      s/radio-hammerhead-[a-z0-9]*-[0-9\.]*\.img/radio-hammerhead-\*\.img/;
-      s/image-hammerhead-[a-z0-9]*\.zip/image-hammerhead-\*\.zip/;
-    ' \
+    "
+      s/bootloader-${device_code_name}-[a-z0-9]*\.img/bootloader-${device_code_name}-\*\.img/;
+      s/radio-${device_code_name}-[a-z0-9]*-[0-9\.]*\.img/radio-${device_code_name}-\*\.img/;
+      s/image-${device_code_name}-[a-z0-9]*\.zip/image-${device_code_name}-\*\.zip/;
+    " \
     "${install_script_reduced}"
 
   # This might be paranoid.  The script gets downloaded over https.  (Trust
@@ -372,19 +380,19 @@ EOF
     error_output        "The install script changed.  You may wish to review the new script, at:"
     error_output        "  ${install_script}"
     error_output        "Also see:"
-    error_output        "  https://developers.google.com/android/nexus/images"
+    error_output        "  ${image_list_url}"
     error_output        "Then edit this script appropriately."
     return 1
   fi
 
   output        "Flashing bootloader."
-  fastboot flash bootloader bootloader-hammerhead-*.img \
+  fastboot flash bootloader bootloader-${device_code_name}-*.img \
     || fail     "Failed to flash bootloader."
   reboot_from_fastboot_to_fastboot \
     || fail     "Failed to reboot to fastboot."
   sleep 1
   output        "Flashing radio."
-  fastboot flash radio radio-hammerhead-*.img \
+  fastboot flash radio radio-${device_code_name}-*.img \
     || fail     "Failed to flash radio."
   reboot_from_fastboot_to_fastboot \
     || fail     "Failed to reboot to fastboot."
@@ -395,41 +403,33 @@ EOF
   else wipe_flag='-w'
   fi
   # No quotes around ${wipe_flag}, here.
-  fastboot ${wipe_flag} update image-hammerhead-*.zip \
-    || fail     "Failed to flash image."
+  #fastboot ${wipe_flag} update image-${device_code_name}-*.zip \
+  #  || fail     "Failed to flash image."
 
+  # Instead of fastboot update, flash individually:
+  unzip -o image-${device_code_name}-*.zip \
+    || fail     "Failed to unzip image."
+  fastboot flash recovery recovery.img \
+    || fail     "Failed to flash recovery."
+  fastboot flash boot boot.img \
+    || fail     "Failed to flash boot."
+  fastboot flash system system.img \
+    || fail     "Failed to flash system."
+  fastboot flash vendor vendor.img \
+    || fail     "Failed to flash vendor."
+  fastboot flash cache cache.img \
+    || fail     "Failed to flash cache."
+  fastboot flash userdata userdata.img \
+    || fail     "Failed to flash userdata."
   output        "Installation complete."
-  
   cd - >/dev/null \
     || fail     "Failed to return from image directory."
-
   if ! test "${wipe_flag}" = ""; then
     output      "Once you provide wifi and Google credentials, Android should start restoring apps."
-    prompt      "When USB debugging is enabled, press Enter to continue."
-  else
-    wait_for_adb
   fi
-}
-
-
-function install_twrp_image {
-  enter_fastboot \
-    || fail     "Failed to enter fastboot."
-  output        "Beginning TWRP recovery image installation."
-  reboot_from_fastboot_to_fastboot \
-    || fail     "Failed to reboot from fastboot to fastboot."
-  fastboot flash recovery "${twrp_image_file}" \
-    || fail     "Failed to flash twrp image:  ${twrp_image_file}"
-  reboot_from_fastboot_to_fastboot \
-    || fail     "Failed to reboot from fastboot to fastboot."
-  reboot_from_fastboot_to_fastboot \
-    || fail     "Failed to reboot from fastboot to fastboot."
-  # Load new recovery without booting Android.  Then it can initialize itself
-  # somehow.  Otherwise Android does something bad to it, and recovery no
-  # longer works.  (At least TWRP.)
-  enter_recovery 'direct' \
-    || fail     "Failed to enter recovery."
-  output        "TWRP recovery image installation successful."
+  output        "Enable USB debugging to continue."
+  reboot_from_fastboot_to_device \
+    || fail     "Failed to reboot from fastboot to android."
 }
 
 
@@ -441,22 +441,27 @@ function enter_recovery {
       output            "Device is already in recovery mode."
       ;;
     'device')
-      reboot_from_adb_to_recovery \
-        || fail         "Failed to reboot from adb to recovery."
-      prompt            "If your device is encrypted, unlock it; then hit Enter."
-      prompt            "Deny any proposal to modify the system volume, then hit Enter."
+      output            "Rebooting device from android to recovery."
+      adb reboot recovery \
+        || fail         "Failed to reboot from android to recovery."
+      prompt            "Do not modify the system volume.  When recovery is loaded, hit Enter."
       ;;
     'unknown')
       # Thought this would be "bootloader", but adb get-state shows unknown.  *shrug*
       if test 'direct' = "${1}"; then
-        reboot_from_fastboot_to_recovery_by_user \
-          || fail       "Failed to reboot from fastboot to recovery."
+        prompt          "Use the volume and power buttons to enter Recovery, then press enter."
+        prompt          "If prompted, do not allow modifications to the system partition (keep read only), and check \"never show again\"."
+        prompt          "Unlock if necessary, and press Enter when Recovery has loaded."
       else
-        reboot_from_fastboot_to_recovery \
-          || fail       "Failed to reboot from fastboot to recovery."
+        output          "Rebooting device from fastboot to android."
+        fastboot reboot \
+          || fail       "Failed to reboot from fastboot to android."
+        wait_for_adb
+        output          "Rebooting device from android to recovery."
+        adb reboot recovery \
+          || fail       "Failed to reboot from android to recovery."
+        prompt          "Do not modify the system volume.  When recovery is loaded, hit Enter."
       fi
-      prompt            "If your device is encrypted, unlock it; then hit Enter."
-      prompt            "Deny any proposal to modify the system volume, then hit Enter."
       ;;
     *)
       fail              "Unknown device state:  '${state}'"
@@ -467,107 +472,12 @@ function enter_recovery {
 
 function enter_fastboot {
   if test 0 -eq $(count_fastboot_devices); then
-    output      "Rebooting from adb to fastboot."
-    reboot_from_adb_to_fastboot \
-      || fail   "Failed to reboot from adb to fastboot."
+    output      "Rebooting from android to fastboot."
+    reboot_from_device_to_fastboot \
+      || fail   "Failed to reboot from android to fastboot."
   fi
 }
-
-
-function erase_system {
-  enter_fastboot \
-    || fail     "Failed to enter fastboot."
-  output        "Erasing system partition."
-  fastboot erase system \
-    || fail     "Failed to erase system partition."
-}
-
-
-function erase_boot {
-  enter_fastboot \
-    || fail     "Failed to enter fastboot."
-  output        "Erasing boot partition."
-  fastboot erase boot \
-    || fail     "Failed to erase boot partition."
-}
-
-
-function write_system {
-  rm -rf "${system_image_dir}" \
-    || fail     "Failed to remove old system image directory."
-  mkdir "${system_image_dir}" \
-    || fail     "Failed to create system image directory."
-  cd "${system_image_dir}" \
-    || fail     "Failed to enter system image directory."
-  erase_system \
-    || fail     "Failed to erase system partition."
-  unzip ../"${image_dir}"/image-hammerhead-*.zip \
-    || fail     "Failed to unzip system image."
-  output        "Writing stock system image."
-  fastboot flash system system.img \
-    || fail     "Failed to flash system."
-  cd - >/dev/null \
-    || fail     "Failed to return from system image directory."
-}
-
-
-function write_boot {
-  cd "${image_dir}" \
-    || fail     "Failed to enter image directory."
-  enter_fastboot \
-    || fail     "Failed to enter fastboot."
-  erase_boot \
-    || fail     "Failed to erase boot."
-  output        "Writing stock boot image."
-  fastboot flash bootloader bootloader-hammerhead-*.img \
-    || fail     "Failed to flash bootloader."
-  cd - >/dev/null \
-    || fail     "Failed to return from image directory."
-}
-
-
-function install_magisk {
-  enter_recovery \
-    || fail     "Failed to enter recovery."
-  push_magisk \
-    || fail     "Failed to push Magisk."
-  prompt        "Tap \"Install\", then hit Enter."
-  output        "Under /sdcard, scroll down and select:"
-  output        "  ${magisk_file}"
-  prompt        "Then hit Enter."
-  prompt        "Swipe to confirm, then hit Enter."
-  prompt        "Wait for install to complete, then hit Enter."
-  reboot_from_adb_to_adb \
-    || fail     "Failed to reboot from adb to adb."
-  install_magisk_app \
-    || fail     "Failed to install Magisk app."
-  prompt        "Check out Magisk, then hit Enter."
-}
-
-
-function install_magisk_app {
-  wait_for_adb
-  prompt        "When there are no apps installing or updating, hit Enter."
-  adb install "${magisk_app_file}"
-}
-
-
-function install_superuser {
-  enter_recovery \
-    || fail     "Failed to enter recovery."
-  push_superuser \
-    || fail     "Failed to push superuser."
-  prompt        "Tap \"Install\", then hit Enter."
-  output        "Under /sdcard, scroll down and select:"
-  output        "  ${superuser_file}"
-  prompt        "Then hit Enter."
-  prompt        "Swipe to confirm, then hit Enter."
-  prompt        "Wait for install to complete, then hit Enter."
-  reboot_from_adb_to_adb \
-    || fail     "Failed to reboot from adb to adb."
-  prompt        "Check out superuser, then hit Enter."
-}
-
+ 
 
 function wait_for_adb {
   output        "If your device is encrypted, unlock it."
@@ -619,6 +529,126 @@ function count_fastboot_devices {
 }
 
 
+function erase_system {
+  enter_fastboot \
+    || fail     "Failed to enter fastboot."
+  output        "Erasing system partition."
+  fastboot erase system \
+    || fail     "Failed to erase system partition."
+}
+
+
+function erase_boot {
+  enter_fastboot \
+    || fail     "Failed to enter fastboot."
+  output        "Erasing boot partition."
+  fastboot erase boot \
+    || fail     "Failed to erase boot partition."
+}
+
+
+function write_system {
+  rm -rf "${system_image_dir}" \
+    || fail     "Failed to remove old system image directory."
+  mkdir "${system_image_dir}" \
+    || fail     "Failed to create system image directory."
+  cd "${system_image_dir}" \
+    || fail     "Failed to enter system image directory."
+  erase_system \
+    || fail     "Failed to erase system partition."
+  unzip ../"${image_dir}"/image-${device_code_name}-*.zip \
+    || fail     "Failed to unzip system image."
+  output        "Writing stock system image."
+  fastboot flash system system.img \
+    || fail     "Failed to flash system."
+  cd - >/dev/null \
+    || fail     "Failed to return from system image directory."
+}
+
+
+function write_boot {
+  cd "${image_dir}" \
+    || fail     "Failed to enter image directory."
+  enter_fastboot \
+    || fail     "Failed to enter fastboot."
+  erase_boot \
+    || fail     "Failed to erase boot."
+  output        "Writing stock boot image."
+  fastboot flash bootloader bootloader-${device_code_name}-*.img \
+    || fail     "Failed to flash bootloader."
+  cd - >/dev/null \
+    || fail     "Failed to return from image directory."
+}
+
+
+function install_twrp_image {
+  enter_fastboot \
+    || fail     "Failed to enter fastboot."
+  output        "Beginning TWRP recovery image installation."
+  reboot_from_fastboot_to_fastboot \
+    || fail     "Failed to reboot from fastboot to fastboot."
+  fastboot flash recovery "${twrp_image_file}" \
+    || fail     "Failed to flash twrp image:  ${twrp_image_file}"
+  reboot_from_fastboot_to_fastboot \
+    || fail     "Failed to reboot from fastboot to fastboot."
+  reboot_from_fastboot_to_fastboot \
+    || fail     "Failed to reboot from fastboot to fastboot."
+  # Load new recovery without booting Android.  Then it can initialize itself
+  # somehow.  Otherwise Android does something bad to it, and recovery no
+  # longer works.  (At least TWRP.)
+  enter_recovery 'direct' \
+    || fail     "Failed to enter recovery."
+  output        "TWRP recovery image installation successful."
+}
+
+
+function install_magisk {
+  enter_recovery \
+    || fail     "Failed to enter recovery."
+  push_magisk \
+    || fail     "Failed to push Magisk."
+  prompt        "Tap \"Install\", then hit Enter."
+  output        "Under /sdcard, scroll down and select:"
+  output        "  ${magisk_file}"
+  prompt        "Then hit Enter."
+  prompt        "Swipe to confirm, then hit Enter."
+  prompt        "Wait for install to complete, then hit Enter."
+  reboot_from_device_to_device \
+    || fail     "Failed to reboot from android to android."
+  install_magisk_app \
+    || fail     "Failed to install Magisk app."
+  prompt        "Check out Magisk, then hit Enter."
+}
+
+
+function install_magisk_app {
+  wait_for_adb
+  prompt        "When there are no apps installing or updating, hit Enter."
+  adb install "${magisk_app_file}"
+}
+
+
+function install_superuser {
+  enter_recovery \
+    || fail     "Failed to enter recovery."
+  push_superuser \
+    || fail     "Failed to push superuser."
+  prompt        "Tap \"Install\", then hit Enter."
+  output        "Under /sdcard, scroll down and select:"
+  output        "  ${superuser_file}"
+  prompt        "Then hit Enter."
+  prompt        "Swipe to confirm, then hit Enter."
+  prompt        "Wait for install to complete, then hit Enter."
+  reboot_from_device_to_device \
+    || fail     "Failed to reboot from android to android."
+  prompt        "Check out superuser, then hit Enter."
+}
+
+
+cookies='cookies.txt'
+cookie_url='https://google.com'
+ack_url='https://developers.google.com/profile/acknowledgeNotification'
+xsrf_token=$(xsrf_token)
 latest_listing=$(latest_listing)
 latest_image_link=$(latest_image_link)
 image_file=$(echo "${latest_image_link}" | sed 's/^.*\///')
@@ -631,6 +661,7 @@ magisk_app_file="Magisk.apk"
 superuser_file='superuser.zip'
 
 
+# TODO:  This logic does not belong here.
 start_version=$(adb shell getprop ro.build.version.release)
 start_major_version=$(echo "${start_version}" | sed 's/\..*//g')
 echo "${start_major_version}" | grep -q '^[0-9]$' || {
@@ -645,27 +676,28 @@ echo "${latest_major_version}" | grep -q '^[0-9]$'|| {
 }
 
 ! test "${start_version}" =  "${latest_version}" || {
-  prompt "WARNING:  Latest image is the same version already on the phone.  Continue?  [Y,n]  "
+  prompt "WARNING:  Latest image is the same version already on the device.  Continue?  [Y,n]  "
   echo "${response}" | grep -iv 'n' || exit 1
 }
 
+# TODO:  This does not belong here either.
 cycle_adb || {
   error_output "Failed to cycle adb."
   exit 1
 }
 
-# Get phone count after cycle_adb, otherwise lines about "starting daemon"
+# Get device count after cycle_adb, otherwise lines about "starting daemon"
 # throw off the count.
 start_adb_count=$(count_adb_devices)
 start_fastboot_count=$(count_fastboot_devices)
-start_phone_count=$(( ${start_adb_count} + ${start_fastboot_count} ))
+start_device_count=$(( start_adb_count + start_fastboot_count ))
 
 mkdir -p ${backup_dir} || {
   error_output "Failed to create backup directory:  ${backup_dir}"
   exit 1
 }
 
-cd /tmp/ || {
+cd $work_dir || {
   error_output "Failed to enter directory:  /tmp"
   exit 1
 }

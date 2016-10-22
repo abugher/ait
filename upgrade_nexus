@@ -9,7 +9,7 @@
 source ait
 
 function main {
-  test 1 -eq $start_phone_count         || fail "I expect one device, but found ${start_phone_count} (${start_adb_count} adb and ${start_fastboot_count} fastboot)."
+  test 1 -eq $start_device_count        || fail "I expect one device, but found ${start_device_count} (${start_adb_count} adb and ${start_fastboot_count} fastboot)."
   backup_data                           || fail "Failed to backup data."
   download_latest_stock_image           || fail "Failed to download stock image."
   download_latest_twrp_image            || fail "Failed to download TWRP recovery image."
@@ -17,10 +17,6 @@ function main {
   download_superuser                    || fail "Failed to download superuser."
   unpack_image                          || fail "Failed to unpack image."
   install_image                         || fail "Failed to install image."
-  #erase_boot                            || fail "Failed to erase boot."
-  #write_boot                            || fail "Failed to overwrite boot."
-  #erase_system                          || fail "Failed to erase system."
-  #write_system                          || fail "Failed to overwrite system."
   install_twrp_image                    || fail "Failed to install TWRP recovery image."
   install_magisk                        || fail "Failed to install Magisk."
   install_superuser                     || fail "Failed to install superuser."
