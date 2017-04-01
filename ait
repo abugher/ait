@@ -9,7 +9,7 @@
 # expand_aliases makes aliases work.  It's not set in scripts by default.
 shopt -s expand_aliases
 
-source device.conf
+source $configuration_file
 
 start_time="$(date "+%Y-%m-%d_%H:%M:%S")"
 
@@ -649,11 +649,11 @@ cookies='cookies.txt'
 cookie_url='https://google.com'
 ack_url='https://developers.google.com/profile/acknowledgeNotification'
 xsrf_token=$(xsrf_token)
-latest_listing=$(latest_listing)
-latest_image_link=$(latest_image_link)
-image_file=$(echo "${latest_image_link}" | sed 's/^.*\///')
-image_dir=$(echo "${image_file}"| sed 's/-factory-[a-z0-9]*\.zip$//')
-system_image_dir="${image_dir}_system"
+#latest_listing=$(latest_listing)
+#latest_image_link=$(latest_image_link)
+#image_file=$(echo "${latest_image_link}" | sed 's/^.*\///')
+#image_dir=$(echo "${image_file}"| sed 's/-factory-[a-z0-9]*\.zip$//')
+#system_image_dir="${image_dir}_system"
 latest_twrp_image_link=$(latest_twrp_image_link)
 twrp_image_file=$(echo "${latest_twrp_image_link}" | sed 's/^.*\///')
 magisk_file="Magisk.zip"
@@ -662,23 +662,23 @@ superuser_file='superuser.zip'
 
 
 # TODO:  This logic does not belong here.
-start_version=$(adb shell getprop ro.build.version.release)
-start_major_version=$(echo "${start_version}" | sed 's/\..*//g')
-echo "${start_major_version}" | grep -q '^[0-9]$' || {
-  error_output "Invalid starting version:  ${start_major_version}"
-  #exit 1
-}
-latest_version=$(latest_image_version)
-latest_major_version=$(echo "${latest_version}" | sed 's/\..*//g')
-echo "${latest_major_version}" | grep -q '^[0-9]$'|| {
-  error_output "Invalid latest version:  ${latest_major_version}"
-  exit 1
-}
+#start_version=$(adb shell getprop ro.build.version.release)
+#start_major_version=$(echo "${start_version}" | sed 's/\..*//g')
+#echo "${start_major_version}" | grep -q '^[0-9]$' || {
+#  error_output "Invalid starting version:  ${start_major_version}"
+#  #exit 1
+#}
+#latest_version=$(latest_image_version)
+#latest_major_version=$(echo "${latest_version}" | sed 's/\..*//g')
+#echo "${latest_major_version}" | grep -q '^[0-9]$'|| {
+#  error_output "Invalid latest version:  ${latest_major_version}"
+#  exit 1
+#}
 
-! test "${start_version}" =  "${latest_version}" || {
-  prompt "WARNING:  Latest image is the same version already on the device.  Continue?  [Y,n]  "
-  echo "${response}" | grep -iv 'n' || exit 1
-}
+#! test "${start_version}" =  "${latest_version}" || {
+#  prompt "WARNING:  Latest image is the same version already on the device.  Continue?  [Y,n]  "
+#  echo "${response}" | grep -iv 'n' || exit 1
+#}
 
 # TODO:  This does not belong here either.
 cycle_adb || {
@@ -692,10 +692,10 @@ start_adb_count=$(count_adb_devices)
 start_fastboot_count=$(count_fastboot_devices)
 start_device_count=$(( start_adb_count + start_fastboot_count ))
 
-mkdir -p ${backup_dir} || {
-  error_output "Failed to create backup directory:  ${backup_dir}"
-  exit 1
-}
+#mkdir -p ${backup_dir} || {
+#  error_output "Failed to create backup directory:  ${backup_dir}"
+#  exit 1
+#}
 
 cd $work_dir || {
   error_output "Failed to enter directory:  /tmp"
