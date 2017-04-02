@@ -6,18 +6,23 @@
 # published by Sam Hocevar. See WTFPL.txt or http://www.wtfpl.net/ for more
 # details.
 
+source settings.sh
+
 if test $# -lt 1; then
-  echo Specify a configuration file. >&2
+  echo Specify a profile.>&2
   exit 1
 fi
-configuration_file="${1}"
-source ait
+profile="${1}"
+
+source profiles/"${profile}".sh
+
+source lib/ait.sh
 
 function main {
   test 1 -eq $start_device_count        || fail "I expect one device, but found ${start_device_count} (${start_adb_count} adb and ${start_fastboot_count} fastboot)."
   #backup_data                           || fail "Failed to backup data."
   #download_latest_stock_image           || fail "Failed to download stock image."
-  #download_latest_twrp_image            || fail "Failed to download TWRP recovery image."
+  download_latest_twrp_image            || fail "Failed to download TWRP recovery image."
   #download_superuser                    || fail "Failed to download superuser."
   #unpack_image                          || fail "Failed to unpack image."
   #install_image                         || fail "Failed to install image."
@@ -32,7 +37,6 @@ function main {
 
 if test '-h' == "${1}" || test '--help' == "${1}"; then
   requirements                          || fail "Failed to state requirements."
+else
+  main
 fi
-
-
-main

@@ -9,15 +9,11 @@
 # expand_aliases makes aliases work.  It's not set in scripts by default.
 shopt -s expand_aliases
 
-source $configuration_file
-
 start_time="$(date "+%Y-%m-%d_%H:%M:%S")"
 
 backup_file="${backup_dir}/${start_time}.ab"
-# Options for Android 5.
-backup_options_5="-f '${backup_file}' -apk -all -nosystem -shared"
-# Options for Android 6.
-backup_options_6="-f '${backup_file}' -all"
+backup_options="-f '${backup_file}' '-apk -all -nosystem -shared'"
+#backup_options="-f '${backup_file}' -all"
 
 
 function output {
@@ -103,11 +99,6 @@ function backup_data {
   if test 0 -eq $(count_adb_devices); then
     reboot_from_fastboot_to_device \
       || fail   "Failed to reboot from fastboot to adb."
-  fi
-
-  backup_options="${backup_options_5}"
-  if test "${start_major_version}" -gt 5; then
-    backup_options="${backup_options_6}"
   fi
 
   while true; do
@@ -242,9 +233,9 @@ function latest_twrp_image_link {
   image_list_url="https://dl.twrp.me/${device_code_name}/"
 
   wget "${image_list_url}" -O - 2>/dev/null \
-  | awk -F '"' '/href.*dl\.twrp\.me/ {print $2}' \
+  | awk -F '"' '/\/'"${device_code_name}"'\// {print $2}' \
   | head -n 1 \
-  | sed 's/\.html$//'
+  | sed 's/\.html$//;s/^/https:\/\/dl.twrp.me/'
 }
 
 
@@ -450,7 +441,7 @@ function enter_recovery {
       # Thought this would be "bootloader", but adb get-state shows unknown.  *shrug*
       if test 'direct' = "${1}"; then
         prompt          "Use the volume and power buttons to enter Recovery, then press enter."
-        prompt          "If prompted, do not allow modifications to the system partition (keep read only), and check \"never show again\"."
+        prompt          "If using systemless superuser, do not allow modifications to the system partition."
         prompt          "Unlock if necessary, and press Enter when Recovery has loaded."
       else
         output          "Rebooting device from fastboot to android."
@@ -582,6 +573,7 @@ function write_boot {
 
 
 function install_twrp_image {
+  output        "Beginning TWRP recovery image installation."
   enter_fastboot \
     || fail     "Failed to enter fastboot."
   output        "Beginning TWRP recovery image installation."
@@ -629,6 +621,7 @@ function install_magisk_app {
 
 
 function install_superuser {
+  output        "Beginning superuser/supersu installation."
   enter_recovery \
     || fail     "Failed to enter recovery."
   push_superuser \
@@ -641,14 +634,14 @@ function install_superuser {
   prompt        "Wait for install to complete, then hit Enter."
   reboot_from_device_to_device \
     || fail     "Failed to reboot from android to android."
-  prompt        "Check out superuser, then hit Enter."
+  prompt        "Wait for boot to finish (may loop a few times) then hit enter."
 }
 
 
 cookies='cookies.txt'
 cookie_url='https://google.com'
 ack_url='https://developers.google.com/profile/acknowledgeNotification'
-xsrf_token=$(xsrf_token)
+#xsrf_token=$(xsrf_token)
 #latest_listing=$(latest_listing)
 #latest_image_link=$(latest_image_link)
 #image_file=$(echo "${latest_image_link}" | sed 's/^.*\///')
@@ -659,28 +652,10 @@ twrp_image_file=$(echo "${latest_twrp_image_link}" | sed 's/^.*\///')
 magisk_file="Magisk.zip"
 magisk_app_file="Magisk.apk"
 superuser_file='superuser.zip'
-
-
-# TODO:  This logic does not belong here.
 #start_version=$(adb shell getprop ro.build.version.release)
 #start_major_version=$(echo "${start_version}" | sed 's/\..*//g')
-#echo "${start_major_version}" | grep -q '^[0-9]$' || {
-#  error_output "Invalid starting version:  ${start_major_version}"
-#  #exit 1
-#}
-#latest_version=$(latest_image_version)
-#latest_major_version=$(echo "${latest_version}" | sed 's/\..*//g')
-#echo "${latest_major_version}" | grep -q '^[0-9]$'|| {
-#  error_output "Invalid latest version:  ${latest_major_version}"
-#  exit 1
-#}
 
-#! test "${start_version}" =  "${latest_version}" || {
-#  prompt "WARNING:  Latest image is the same version already on the device.  Continue?  [Y,n]  "
-#  echo "${response}" | grep -iv 'n' || exit 1
-#}
-
-# TODO:  This does not belong here either.
+# TODO:  This does not belong here.
 cycle_adb || {
   error_output "Failed to cycle adb."
   exit 1
@@ -692,12 +667,12 @@ start_adb_count=$(count_adb_devices)
 start_fastboot_count=$(count_fastboot_devices)
 start_device_count=$(( start_adb_count + start_fastboot_count ))
 
-#mkdir -p ${backup_dir} || {
-#  error_output "Failed to create backup directory:  ${backup_dir}"
-#  exit 1
-#}
+mkdir -p ${backup_dir} || {
+  error_output "Failed to create backup directory:  ${backup_dir}"
+  exit 1
+}
 
 cd $work_dir || {
-  error_output "Failed to enter directory:  /tmp"
+  error_output "Failed to enter directory:  ${work_dir}"
   exit 1
 }
