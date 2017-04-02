@@ -56,8 +56,7 @@ function reboot_from_fastboot_to_device {
 
 
 function boot_device {
-  state="$(adb get-state)"
-  output        "DEBUG:  State:  ${state}"
+  state="$(get_state)"
   case "${state}" in
     'recovery')
       reboot_from_recovery_to_device \
@@ -142,6 +141,24 @@ function restore_data {
 
   wait_for_adb
 
+  if 
+    test "" == "${backup_file}" \
+    || ! test -f "${backup_file}"
+  then
+    backup_file=${backup_dir}/$(ls -1tr "${backup_dir}" | tail -n 1)
+    output      "Last known backup:  ${backup_file}"
+    prompt      "Restore from this file?  [Y,n]"
+    case "${response}" in
+      'N')
+        ;&
+      'n')
+        exit
+        ;;
+      *)
+        ;;
+    esac
+  fi
+
   while true; do
     output      "Restoring data from:  ${backup_file}"
     adb restore "${backup_file}" \
@@ -150,14 +167,15 @@ function restore_data {
     output      "Warning:  I need your judgement on whether to continue."
     prompt      "Try again, Quit, or Continue?  [t,q,C]  "
     case "${response}" in
+      'T')
+        ;&
       't')
         continue
         ;;
+      'Q')
+        ;&
       'q')
         exit
-        ;;
-      'c')
-        break
         ;;
       *)
         break
@@ -168,64 +186,6 @@ function restore_data {
   reboot_from_device_to_device \
     || fail     "Failed to reboot from adb to adb."
   output        "Restore successful."
-}
-
-
-function xsrf_token {
-  wget \
-    --save-cookies "${cookies}" \
-    -O - \
-    "${cookie_url}" \
-  > /dev/null
-
-  wget \
-    --save-cookies "${cookies}" \
-    --load-cookies "${cookies}" \
-    -O - \
-    "${image_list_url}"\
-  | grep '<meta name="xsrf_token"' \
-  | sed 's/^.*content="//;s/".*$//g'
-}
-
-
-function accept_tos {
-  wget \
-    --save-cookies "${cookies}" \
-    --load-cookies "${cookies}" \
-    -O - \
-    --post-data='notification_id=wall-nexus-image-tos' \
-    --header="X_XSRFToken: ${xsrf_token}" \
-    "${ack_url}" \
-  > /dev/null
-}
-
-
-function latest_listing {
-  accept_tos
-
-  wget \
-    -O - \
-    --load-cookies "${cookies}" \
-    --header="X_XSRFToken: ${xsrf_token}" \
-    "${image_list_url}" \
-    2> /dev/null
-}
-
-
-function latest_image_link {
-  echo -e "${latest_listing}" \
-  | grep "${device_code_name}"'.*'factory \
-  | tail -n 1 \
-  | awk -F '"' '{print $2}'
-}
-
-
-function latest_image_version {
-  echo -e "${latest_listing}" \
-  | grep -B 1 "${device_code_name}"'.*'factory \
-  | tail -n 2 \
-  | head -n 1 \
-  | sed -E 's/^[^0-9]*([0-9.]+).*$/\1/'
 }
 
 
@@ -246,17 +206,6 @@ function download_latest_twrp_image {
     output      "TWRP download begins."
     wget --referer "${latest_twrp_image_link}" "${latest_twrp_image_link}"
     output      "TWRP download complete."
-  fi
-}
-
-
-function download_latest_stock_image {
-  if test -e "${image_file}"; then
-    output      "Image file already exists.  Skipping download."
-  else
-    output      "Download begins."
-    wget "${latest_image_link}"
-    output      "Download complete."
   fi
 }
 
@@ -323,9 +272,15 @@ function cycle_adb {
 
 
 function unpack_image {
+  output        "Removing old images."
+  rm -rf "${device_code_name}"-* \
+    || fail     "Failed to remove:  ${device_code_name}-*"
   output        "Unpacking image."
+  listing_before=$(ls -1tr)
   unzip -o "${image_file}" \
     || fail     "Failed to unpack image:  ${image_file}"
+  listing_after=$(ls -1tr)
+  image_dir=$(echo -e "${listing_before}\n${listing_after}" | sort | uniq -u)
   output        "Image unpacked."
 }
 
@@ -335,7 +290,7 @@ function install_image {
     reboot_from_device_to_fastboot \
       || fail   "Failed to reboot from android to fastboot."
   fi
-
+  
   cd "${image_dir}" \
     || fail     "Failed to enter image directory."
 
@@ -364,15 +319,8 @@ EOF
     " \
     "${install_script_reduced}"
 
-  # This might be paranoid.  The script gets downloaded over https.  (Trust
-  # Google with root on host system?)  I don't think the script changes much
-  # anyway.
   if ! diff "${install_script_reduced}" "${install_script_expected}" >/dev/null; then
-    error_output        "The install script changed.  You may wish to review the new script, at:"
-    error_output        "  ${install_script}"
-    error_output        "Also see:"
-    error_output        "  ${image_list_url}"
-    error_output        "Then edit this script appropriately."
+    error_output        "The install script changed.  Review the new script (${install_script}), then edit this script appropriately."
     return 1
   fi
 
@@ -389,13 +337,6 @@ EOF
     || fail     "Failed to reboot to fastboot."
   sleep 1
   output        "Flashing image."
-  # Don't wipe out userdata on minor upgrades.
-  if test "${latest_major_version}" = "${start_major_version}"; then wipe_flag=''
-  else wipe_flag='-w'
-  fi
-  # No quotes around ${wipe_flag}, here.
-  #fastboot ${wipe_flag} update image-${device_code_name}-*.zip \
-  #  || fail     "Failed to flash image."
 
   # Instead of fastboot update, flash individually:
   unzip -o image-${device_code_name}-*.zip \
@@ -412,21 +353,19 @@ EOF
     || fail     "Failed to flash cache."
   fastboot flash userdata userdata.img \
     || fail     "Failed to flash userdata."
-  output        "Installation complete."
   cd - >/dev/null \
     || fail     "Failed to return from image directory."
-  if ! test "${wipe_flag}" = ""; then
-    output      "Once you provide wifi and Google credentials, Android should start restoring apps."
-  fi
+  output        "Once you provide wifi and Google credentials, Android should start restoring apps."
   output        "Enable USB debugging to continue."
+  # Next step does not complete until USB debugging comes online.
   reboot_from_fastboot_to_device \
     || fail     "Failed to reboot from fastboot to android."
+  prompt        "Wait for boot to finish (may loop a few times) then hit enter."
 }
 
 
 function enter_recovery {
-  state="$(adb get-state)"
-  output        "DEBUG:  State:  ${state}"
+  state="$(get_state)"
   case "${state}" in
     'recovery')
       output            "Device is already in recovery mode."
@@ -437,11 +376,10 @@ function enter_recovery {
         || fail         "Failed to reboot from android to recovery."
       prompt            "Do not modify the system volume.  When recovery is loaded, hit Enter."
       ;;
-    'unknown')
-      # Thought this would be "bootloader", but adb get-state shows unknown.  *shrug*
+    'bootloader')
       if test 'direct' = "${1}"; then
         prompt          "Use the volume and power buttons to enter Recovery, then press enter."
-        prompt          "If using systemless superuser, do not allow modifications to the system partition."
+        output          "If using systemless superuser, do not allow modifications to the system partition."
         prompt          "Unlock if necessary, and press Enter when Recovery has loaded."
       else
         output          "Rebooting device from fastboot to android."
@@ -517,6 +455,17 @@ function wait_for_fastboot {
 
 function count_fastboot_devices {
   echo $(fastboot devices | wc -l)
+}
+
+
+function get_state {
+  if test 1 == $(count_adb_devices); then
+    adb get-state
+  elif test 1 == $(count_fastboot_devices); then
+    echo bootloader
+  else
+    echo unkown
+  fi
 }
 
 
@@ -634,18 +583,14 @@ function install_superuser {
   prompt        "Wait for install to complete, then hit Enter."
   reboot_from_device_to_device \
     || fail     "Failed to reboot from android to android."
-  prompt        "Wait for boot to finish (may loop a few times) then hit enter."
 }
 
 
 cookies='cookies.txt'
 cookie_url='https://google.com'
 ack_url='https://developers.google.com/profile/acknowledgeNotification'
-#xsrf_token=$(xsrf_token)
-#latest_listing=$(latest_listing)
-#latest_image_link=$(latest_image_link)
-#image_file=$(echo "${latest_image_link}" | sed 's/^.*\///')
-#image_dir=$(echo "${image_file}"| sed 's/-factory-[a-z0-9]*\.zip$//')
+image_file="image_${device_code_name}.zip"
+image_dir=''
 #system_image_dir="${image_dir}_system"
 latest_twrp_image_link=$(latest_twrp_image_link)
 twrp_image_file=$(echo "${latest_twrp_image_link}" | sed 's/^.*\///')

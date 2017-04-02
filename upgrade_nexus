@@ -14,28 +14,29 @@ if test $# -lt 1; then
 fi
 profile="${1}"
 
-source profiles/"${profile}".sh
+source profiles/"${profile}".sh # conditional failure would look good here.
 
+# Try to split out utility functions like 'fail' which should be loaded early, and load them earlier.
 source lib/ait.sh
 
 function main {
   test 1 -eq $start_device_count        || fail "I expect one device, but found ${start_device_count} (${start_adb_count} adb and ${start_fastboot_count} fastboot)."
   #backup_data                           || fail "Failed to backup data."
   #download_latest_stock_image           || fail "Failed to download stock image."
-  download_latest_twrp_image            || fail "Failed to download TWRP recovery image."
+  #download_latest_twrp_image            || fail "Failed to download TWRP recovery image."
   #download_superuser                    || fail "Failed to download superuser."
   #unpack_image                          || fail "Failed to unpack image."
   #install_image                         || fail "Failed to install image."
-  install_twrp_image                    || fail "Failed to install TWRP recovery image."
-  install_superuser                     || fail "Failed to install superuser."
+  #install_twrp_image                    || fail "Failed to install TWRP recovery image."
+  #install_superuser                     || fail "Failed to install superuser."
   # Leave fastboot.
-  reboot_from_device_to_device          || fail "Failed to reboot from adb to adb."
-  #restore_data                          || fail "Failed to restore application data."
+  #reboot_from_device_to_device          || fail "Failed to reboot from adb to adb."
+  restore_data                          || fail "Failed to restore application data."
   output                                "Success!"
 }
 
-
 if test '-h' == "${1}" || test '--help' == "${1}"; then
+  # This code isn't reachable because '-h' gets interpreted as a profile name.
   requirements                          || fail "Failed to state requirements."
 else
   main
