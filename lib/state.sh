@@ -7,61 +7,6 @@
 # details.
 
 
-function reboot_from_device_to_device {
-  output        "Rebooting device from android to android."
-  adb reboot \
-    || fail     "Failed to reboot from android to android."
-  wait_for_adb
-}
-
-
-function reboot_from_fastboot_to_device {
-  output        "Rebooting device from fastboot to android."
-  fastboot reboot \
-    || fail     "Failed to reboot from fastboot to android."
-  wait_for_adb
-}
-
-
-function boot_device {
-  state="$(get_state)"
-  case "${state}" in
-    'recovery')
-      reboot_from_recovery_to_device \
-        || fail         "Failed to reboot from recovery to android."
-      ;;
-    'device')
-      # device == android
-      output            "Device is already booted."
-      ;;
-    'unknown')
-      # unknown == bootloader, aka fastboot
-      reboot_from_fastboot_to_device \
-        || fail         "Failed to reboot from fastboot to android."
-      ;;
-    *)
-      fail              "Unknown device state:  '${state}'"
-      ;;
-  esac
-}
-
-
-function reboot_from_device_to_fastboot {
-  output        "Rebooting device from android to fastboot."
-  adb reboot-bootloader \
-    || fail     "Failed to reboot from android to fastboot."
-  wait_for_fastboot
-}
-
-
-function reboot_from_fastboot_to_fastboot {
-  output        "Rebooting device from fastboot to fastboot."
-  fastboot reboot-bootloader \
-    || fail     "Failed to reboot from fastboot to fastboot."
-  wait_for_fastboot
-}
-
-
 function cycle_adb {
   output        "Killing adb."
   adb kill-server \
@@ -72,9 +17,42 @@ function cycle_adb {
 }
 
 
-function enter_recovery {
-  state="$(get_state)"
-  case "${state}" in
+function reboot_device {
+  if test $(get_state) == 'device'; then
+    adb reboot \
+      || fail           "Failed to reboot device."
+    wait_for_adb
+  else
+    boot_device \
+      || fail           "Failed to reboot device."
+  fi
+}
+
+
+function boot_device {
+  case "$(get_state)" in
+    'recovery')
+      adb reboot \
+        || fail         "Failed to reboot device."
+      wait_for_adb
+      ;;
+    'device')
+      output            "Device is already booted."
+      ;;
+    'bootloader')
+      fastboot reboot \
+        || fail         "Failed to reboot from fastboot to android."
+      wait_for_adb
+      ;;
+    *)
+      fail              "Unknown device state:  '${state}'"
+      ;;
+  esac
+}
+
+
+function boot_recovery {
+  case "$(get_state)" in
     'recovery')
       output            "Device is already in recovery mode."
       ;;
@@ -82,22 +60,21 @@ function enter_recovery {
       output            "Rebooting device from android to recovery."
       adb reboot recovery \
         || fail         "Failed to reboot from android to recovery."
-      prompt            "Do not modify the system volume.  When recovery is loaded, hit Enter."
+      wait_for_recovery
       ;;
     'bootloader')
       if test 'direct' = "${1}"; then
         prompt          "Use the volume and power buttons to enter Recovery, then press enter."
-        output          "If using systemless superuser, do not allow modifications to the system partition."
-        prompt          "Unlock if necessary, and press Enter when Recovery has loaded."
+        wait_for_recovery
       else
         output          "Rebooting device from fastboot to android."
         fastboot reboot \
           || fail       "Failed to reboot from fastboot to android."
-        wait_for_adb
+        wait_for_recovery
         output          "Rebooting device from android to recovery."
         adb reboot recovery \
           || fail       "Failed to reboot from android to recovery."
-        prompt          "Do not modify the system volume.  When recovery is loaded, hit Enter."
+        wait_for_recovery
       fi
       ;;
     *)
@@ -107,27 +84,48 @@ function enter_recovery {
 }
 
 
-function enter_fastboot {
-  if test 0 -eq $(count_fastboot_devices); then
-    output      "Rebooting from android to fastboot."
-    reboot_from_device_to_fastboot \
-      || fail   "Failed to reboot from android to fastboot."
+function reboot_fastboot {
+  if test $(get_state) == 'fastboot'; then
+    fastboot reboot-fastboot \
+      || fail           "Failed to reboot fastboot."
+  else
+    boot_fastboot \
+      || fail           "Failed to reboot fatboot."
   fi
+}
+
+
+function boot_fastboot {
+  case "$(get_state)" in
+    'recovery')
+      adb reboot-bootloader \
+        || fail         "Failed to reboot from fastboot to fastboot."
+      wait_for_fastboot
+      ;;
+    'device')
+      adb reboot-bootloader \
+        || fail         "Failed to reboot from android to fastboot."
+      wait_for_fastboot
+      ;;
+    'bootloader')
+      output            "Device is already in fastboot mode."
+      ;;
+    *)
+      fail              "Unknown device state:  '${state}'"
+      ;;
+  esac
 }
  
 
 function wait_for_adb {
   output        "If your device is encrypted, unlock it."
   output        "Waiting for adb..."
-  # This doesn't work at the end...
   while 
     adb_count=$(count_adb_devices)
     ! test "${adb_count}" -eq 1
   do
-    #output "... ${adb_count} / 1 devices detected."
     sleep 1
   done
-
   
   while 
     boot_completed=$(
@@ -144,13 +142,28 @@ function wait_for_adb {
 }
 
 
+function wait_for_recovery {
+  output        "If your device is encrypted, unlock it."
+  output        "Waiting for recovery..."
+  while 
+    adb_count=$(count_adb_devices)
+    ! test "${adb_count}" -eq 1
+  do
+    output      "Device not yet detected."
+    sleep 1
+  done
+  output "recovery is up."
+}
+
+
 function wait_for_fastboot {
   output        "Waiting for fastboot..."
-  fastboot_count=$(count_fastboot_devices)
-  while ! test "${fastboot_count}" -eq 1; do
-    output      "Device not yet detected."
-    sleep 1;
+  while 
     fastboot_count=$(count_fastboot_devices)
+    ! test "${fastboot_count}" -eq 1
+  do
+    output      "Device not yet detected."
+    sleep 1
   done
   output        "fastboot is up."
 }
@@ -167,12 +180,25 @@ function count_fastboot_devices {
 
 
 function get_state {
-  if test 1 == $(count_adb_devices); then
-    adb get-state
-  elif test 1 == $(count_fastboot_devices); then
-    echo bootloader
-  else
-    echo unkown
-  fi
+  while true; do
+    if test 1 == $(count_adb_devices); then
+      adb get-state
+      break
+    elif test 1 == $(count_fastboot_devices); then
+      echo bootloader
+      break
+    else
+      prompt            "Device is missing.  Jiggle the cables or something.  Try again or quit?  [T,q]"
+      case $response in
+        'Q')
+          ;&
+        'q')
+          fail          "Device missing."
+          ;;
+        *)
+          ;;
+      esac
+    fi
+  done
 }
 

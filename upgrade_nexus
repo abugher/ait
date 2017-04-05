@@ -6,18 +6,19 @@
 # published by Sam Hocevar. See WTFPL.txt or http://www.wtfpl.net/ for more
 # details.
 
-test $# -lt 1                           || {
+test $# -lt 1                           && {
   echo "ERROR:  Specify a profile." >&2
   exit 1
 }
 profile=profiles/"${1}".sh
-source lib/initialize.sh                      || {
+source lib/initialize.sh                || {
   echo "ERROR:  Failed to load Android Imaging Toolkit."
   exit 1
 }
 
 function main {
-  test 1 -eq $start_device_count        || fail "I expect one device, but found ${start_device_count} (${start_adb_count} adb and ${start_fastboot_count} fastboot)."
+  # This main function might look better as in-line code, but the 'fail' alias
+  # relies on 'return', which doesn't work in that context.
   backup_data                           || fail "Failed to backup data."
   download_latest_stock_image           || fail "Failed to download stock image."
   download_latest_twrp_image            || fail "Failed to download TWRP recovery image."
@@ -26,8 +27,8 @@ function main {
   install_image                         || fail "Failed to install image."
   install_twrp_image                    || fail "Failed to install TWRP recovery image."
   install_superuser                     || fail "Failed to install superuser."
-  # Leave fastboot.
-  reboot_from_device_to_device          || fail "Failed to reboot from adb to adb."
   restore_data                          || fail "Failed to restore application data."
   output                                "Success!"
 }
+
+main

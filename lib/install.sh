@@ -29,19 +29,15 @@ function unpack_image {
 
 
 function install_image {
-  if test 0 -eq $(count_fastboot_devices); then
-    reboot_from_device_to_fastboot \
-      || fail   "Failed to reboot from android to fastboot."
-  fi
+  boot_fastboot \
+    || fail     "Failed to enter fastboot mode."
   
+  return_to_dir=$PWD
   cd "${image_dir}" \
     || fail     "Failed to enter image directory."
 
   output        "Beginning installation."
 
-  install_script='flash-all.sh'
-  install_script_reduced='flash-all-reduced.sh'
-  install_script_expected='flash-all-expected.sh'
   grep -Ev ^#'|'^\$ $install_script > $install_script_reduced
   cat > "${install_script_expected}" << EOF
 fastboot flash bootloader bootloader-${device_code_name}-*.img
@@ -70,38 +66,61 @@ EOF
   output        "Flashing bootloader."
   fastboot flash bootloader bootloader-${device_code_name}-*.img \
     || fail     "Failed to flash bootloader."
-  reboot_from_fastboot_to_fastboot \
+  reboot_fastboot \
     || fail     "Failed to reboot to fastboot."
   sleep 1
   output        "Flashing radio."
   fastboot flash radio radio-${device_code_name}-*.img \
     || fail     "Failed to flash radio."
-  reboot_from_fastboot_to_fastboot \
+  reboot_fastboot \
     || fail     "Failed to reboot to fastboot."
   sleep 1
   output        "Flashing image."
 
   # Instead of fastboot update, flash individually:
-  unzip -o image-${device_code_name}-*.zip \
+  image_unpack_directory=image_unpacked
+  mkdir -p $image_unpack_directory \
+    || fail     "Failed to create directory:  ${image_unpack_directory}"
+  cd $image_unpack_directory \
+    || fail     "Failed to enter directory:  ${image_unpack_directory}"
+  unzip -o ../image-${device_code_name}-*.zip \
     || fail     "Failed to unzip image."
+  # Check that contents are roughly as expected.
+  image_file_listing="$(ls | sort)"$'\n'
+  test "${expected_image_files}" == "${image_file_listing}" || {
+    output      "Expected files:  ${expected_image_files}"
+    output      "Actual files:  ${image_file_listing}"
+    fail        "The image-wad contains unexpected images.  Check:  ${PWD}"
+  }
   fastboot flash recovery recovery.img \
     || fail     "Failed to flash recovery."
   fastboot flash boot boot.img \
     || fail     "Failed to flash boot."
   fastboot flash system system.img \
     || fail     "Failed to flash system."
-  fastboot flash vendor vendor.img \
-    || fail     "Failed to flash vendor."
+  if -e vendor.img; then
+    fastboot flash vendor vendor.img \
+      || fail     "Failed to flash vendor."
+  fi
   fastboot flash cache cache.img \
     || fail     "Failed to flash cache."
-  fastboot flash userdata userdata.img \
-    || fail     "Failed to flash userdata."
-  cd - >/dev/null \
-    || fail     "Failed to return from image directory."
+  prompt        "Overwrite userdata?  [Y,n]"
+  case $response in
+    'N')
+      ;&
+    'n')
+      ;;
+    '*')
+      fastboot flash userdata userdata.img \
+        || fail     "Failed to flash userdata."
+      ;;
+  esac
+  cd $return_to_dir >/dev/null \
+    || fail     "Failed change directory:  ${return_to_dir}"
   output        "Once you provide wifi and Google credentials, Android should start restoring apps."
   output        "Enable USB debugging to continue."
   # Next step does not complete until USB debugging comes online.
-  reboot_from_fastboot_to_device \
+  boot_device \
     || fail     "Failed to reboot from fastboot to android."
   prompt        "Wait for boot to finish (may loop a few times) then hit enter."
 }
@@ -109,21 +128,21 @@ EOF
 
 function install_twrp_image {
   output        "Beginning TWRP recovery image installation."
-  enter_fastboot \
+  boot_fastboot \
     || fail     "Failed to enter fastboot."
   output        "Beginning TWRP recovery image installation."
-  reboot_from_fastboot_to_fastboot \
+  reboot_fastboot \
     || fail     "Failed to reboot from fastboot to fastboot."
   fastboot flash recovery "${twrp_image_file}" \
     || fail     "Failed to flash twrp image:  ${twrp_image_file}"
-  reboot_from_fastboot_to_fastboot \
+  reboot_fastboot \
     || fail     "Failed to reboot from fastboot to fastboot."
-  reboot_from_fastboot_to_fastboot \
+  reboot_fastboot \
     || fail     "Failed to reboot from fastboot to fastboot."
   # Load new recovery without booting Android.  Then it can initialize itself
   # somehow.  Otherwise Android does something bad to it, and recovery no
   # longer works.  (At least TWRP.)
-  enter_recovery 'direct' \
+  boot_recovery 'direct' \
     || fail     "Failed to enter recovery."
   output        "TWRP recovery image installation successful."
 }
@@ -131,7 +150,7 @@ function install_twrp_image {
 
 function install_superuser {
   output        "Beginning superuser/supersu installation."
-  enter_recovery \
+  boot_recovery \
     || fail     "Failed to enter recovery."
   push_superuser \
     || fail     "Failed to push superuser."
@@ -141,8 +160,8 @@ function install_superuser {
   prompt        "Then hit Enter."
   prompt        "Swipe to confirm, then hit Enter."
   prompt        "Wait for install to complete, then hit Enter."
-  reboot_from_device_to_device \
-    || fail     "Failed to reboot from android to android."
+  reboot_device \
+    || fail     "Failed to reboot device."
 }
 
 

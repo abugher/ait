@@ -8,16 +8,13 @@
 
 
 backup_file="${backup_dir}/${start_time}.ab"
-#backup_options="-f '${backup_file}' -all"
-backup_options="-f '${backup_file}' '-apk -all -nosystem -shared'"
+#backup_options="-f '${backup_file}' '-apk -all -nosystem -shared'"
+backup_options="-f '${backup_file}' -apk -all -nosystem -shared"
 
 
 function backup_data {
-  if test 0 -eq $(count_adb_devices); then
-    reboot_from_fastboot_to_device \
-      || fail   "Failed to reboot from fastboot to adb."
-  fi
-
+  boot_device \
+    || fail        "Failed to boot device."
   while true; do
     output      "Running 'adb backup' to this file:  ${backup_file}"
     eval "adb backup ${backup_options}" \
@@ -52,10 +49,8 @@ function backup_data {
 
 
 function restore_data {
-  if test 0 -eq $(count_adb_devices); then
-    reboot_from_fastboot_to_device \
-      || fail   "Failed to reboot from fastboot to adb."
-  fi
+  boot_device \
+    || fail     "Failed to boot device."
 
   wait_for_adb
 
@@ -101,8 +96,8 @@ function restore_data {
     esac
   done
   
-  reboot_from_device_to_device \
-    || fail     "Failed to reboot from adb to adb."
+  reboot_device \
+    || fail     "Failed to reboot from device."
   output        "Restore successful."
 }
 
