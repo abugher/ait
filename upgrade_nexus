@@ -16,6 +16,7 @@ source lib/initialize.sh                || {
   exit 1
 }
 
+
 function main {
   # This main function might look better as in-line code, but the 'fail' alias
   # relies on 'return', which doesn't work in that context.
