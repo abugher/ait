@@ -18,10 +18,12 @@ source lib/backup.sh                    || fail "Failed to load:  backup.sh"
 source lib/download.sh                  || fail "Failed to load:  download.sh"
 source lib/install.sh                   || fail "Failed to load:  install.sh"
 
-cycle_adb || {
-  error_output "Failed to cycle adb."
-  exit 1
-}
+output        "Killing adb."
+adb kill-server \
+  || fail     "Failed to kill adb server."
+output        "Starting adb."
+adb start-server \
+  || fail     "Failed to start adb server."
 
 cd $work_dir || {
   error_output "Failed to enter directory:  ${work_dir}"

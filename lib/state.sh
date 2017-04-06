@@ -7,21 +7,11 @@
 # details.
 
 
-function cycle_adb {
-  output        "Killing adb."
-  adb kill-server \
-    || fail     "Failed to kill adb server."
-  output        "Starting adb."
-  adb start-server \
-    || fail     "Failed to start adb server."
-}
-
-
 function reboot_device {
   if test $(get_state) == 'device'; then
     adb reboot \
       || fail           "Failed to reboot device."
-    wait_for_adb
+    wait_for_android
   else
     boot_device \
       || fail           "Failed to reboot device."
@@ -34,7 +24,7 @@ function boot_device {
     'recovery')
       adb reboot \
         || fail         "Failed to reboot device."
-      wait_for_adb
+      wait_for_android
       ;;
     'device')
       output            "Device is already booted."
@@ -42,7 +32,7 @@ function boot_device {
     'bootloader')
       fastboot reboot \
         || fail         "Failed to reboot from fastboot to android."
-      wait_for_adb
+      wait_for_android
       ;;
     *)
       fail              "Unknown device state:  '${state}'"
@@ -117,11 +107,11 @@ function boot_fastboot {
 }
  
 
-function wait_for_adb {
+function wait_for_android {
   output        "If your device is encrypted, unlock it."
   output        "Waiting for adb..."
   while 
-    adb_count=$(count_adb_devices)
+    adb_count=$(count_android_devices)
     ! test "${adb_count}" -eq 1
   do
     sleep 1
@@ -146,7 +136,7 @@ function wait_for_recovery {
   output        "If your device is encrypted, unlock it."
   output        "Waiting for recovery..."
   while 
-    adb_count=$(count_adb_devices)
+    adb_count=$(count_android_devices)
     ! test "${adb_count}" -eq 1
   do
     output      "Device not yet detected."
@@ -169,7 +159,7 @@ function wait_for_fastboot {
 }
 
 
-function count_adb_devices {
+function count_android_devices {
   echo $(( $(adb devices | wc -l) - 2 ))
 }
 
@@ -181,7 +171,7 @@ function count_fastboot_devices {
 
 function get_state {
   while true; do
-    if test 1 == $(count_adb_devices); then
+    if test 1 == $(count_android_devices); then
       adb get-state
       break
     elif test 1 == $(count_fastboot_devices); then

@@ -52,7 +52,7 @@ function restore_data {
   boot_device \
     || fail     "Failed to boot device."
 
-  wait_for_adb
+  wait_for_android
 
   if 
     test "" == "${backup_file}" \
