@@ -2,24 +2,32 @@ AIT
 
 Android Imaging Tools
 
-This is a set of functions and scripts intended to facilitate ad hoc deployment
-of various types of images for Android devices (system image, recovery image,
-etc) as well development of complete upgrade paths for specific devices.
+This is to facilitate deployment of stock images to Android devices.
+"Deployment" includes applying a recovery image, installing a superuser
+application, backup and restore of user data, etc.
 
-Stock devices are probably better served by OTA updates, and a reputable
-after-market image will come with its own update routines.  The envisioned
-use case for AIT is devices running modified (eg rooted) stock firmware.
+The primary use case is a rooted stock image.  Over-the-air updates are more
+convenient, if running without root.  A good after-market image should come
+with its own self-update system, so you don't need to bother with my buggy
+scripts.
 
-If you want to play with the functions:
-
-  source ait
+Personally, I like to stay with mostly stock software when possible, but I want
+root access, and I also want updates.  I found the process of deploying a stock
+image, then reapplying the recovery image, then rooting again, to be a bit
+tedious, so I have attempted to automate that process with the script
+"update_device".
 
 
 Files:
 
-  - ait - This is a library of functions.  This is the big blob of code sourced
-    by smaller scripts.
+  - lib - Libraries.  (A shell script that just defines functions is a library,
+    right?  Sure.)
 
-  - device.conf - Device specific settings.
+  - platforms - Configuration files for specific device models.  (A shell
+    script that just sets variables is a configuration file, right?  Yeah,
+    totally.)
 
-  - upgrade\_nexus - Script for upgrading a Nexus device, tested with Nexus 5.
+  - profiles - Configuration files for individual devices, typically named for
+    the user.
+
+  - upgrade\_device - Script for upgrading a device.
