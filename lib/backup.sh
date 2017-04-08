@@ -97,7 +97,7 @@ function restore_data {
   done
   
   reboot_device \
-    || fail     "Failed to reboot from device."
+    || fail     "Failed to reboot device."
   output        "Restore successful."
 }
 
