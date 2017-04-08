@@ -16,6 +16,10 @@ function push_superuser {
 
 function unpack_image {
   output        "Removing old images."
+  test "" == "${image_prefix}" \
+    && fail     "image_prefix is empty.  That's both wrong and dangerous."
+  rm -rf "${image_prefix}"* \
+    || fail     "Failed to remove:  ${image_prefix}*"
   output        "Unpacking image."
   listing_before=$(ls -1tr)
   unzip -o "${image_file}" \
