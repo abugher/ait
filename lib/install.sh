@@ -103,15 +103,15 @@ EOF
   fi
   fastboot flash cache cache.img \
     || fail     "Failed to flash cache."
-  prompt        "Overwrite userdata?  [Y,n]"
+  prompt        "Overwrite userdata?  [y,N]"
   case $response in
-    'N')
+    'Y')
       ;&
-    'n')
-      ;;
-    '*')
+    'y')
       fastboot flash userdata userdata.img \
         || fail     "Failed to flash userdata."
+      ;;
+    '*')
       ;;
   esac
   cd $return_to_dir >/dev/null \
