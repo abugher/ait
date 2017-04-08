@@ -121,7 +121,6 @@ EOF
   # Next step does not complete until USB debugging comes online.
   boot_device \
     || fail     "Failed to reboot from fastboot to android."
-  prompt        "Wait for boot to finish (may loop a few times) then hit enter."
 }
 
 

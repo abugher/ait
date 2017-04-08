@@ -159,6 +159,12 @@ function wait_for_fastboot {
 }
 
 
+function device_id {
+  adb devices | awk '/\tdevice/ {print $1}'
+  fastboot devices | awk '/\tfastboot/ {print $1}'
+}
+
+
 function count_android_devices {
   echo $(( $(adb devices | wc -l) - 2 ))
 }

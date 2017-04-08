@@ -31,7 +31,7 @@ cd $work_dir \
 mkdir -p ${backup_dir} \
   || fail                       "Failed to create backup directory:  ${backup_dir}"
 
-device_id=$(adb devices | awk '/\tdevice/ {print $1}')
+device_id=$(device_id)
 test "${device_id}" == "${expected_device_id}" \
   || fail                       "Device id:  '${device_id}'  Expected:  '${expected_device_id}'"
 
