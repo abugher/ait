@@ -16,14 +16,13 @@ function push_superuser {
 
 function unpack_image {
   output        "Removing old images."
-  rm -rf "${device_code_name}"-* \
-    || fail     "Failed to remove:  ${device_code_name}-*"
   output        "Unpacking image."
   listing_before=$(ls -1tr)
   unzip -o "${image_file}" \
     || fail     "Failed to unpack image:  ${image_file}"
   listing_after=$(ls -1tr)
   image_dir=$(echo -e "${listing_before}\n${listing_after}" | sort | uniq -u)
+  output        "DEBUG:  image_dir='${image_dir}'"
   output        "Image unpacked."
 }
 

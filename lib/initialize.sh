@@ -18,22 +18,22 @@ source lib/backup.sh                    || fail "Failed to load:  backup.sh"
 source lib/download.sh                  || fail "Failed to load:  download.sh"
 source lib/install.sh                   || fail "Failed to load:  install.sh"
 
-output        "Killing adb."
+output                          "Killing adb."
 adb kill-server \
-  || fail     "Failed to kill adb server."
-output        "Starting adb."
+  || fail                       "Failed to kill adb server."
+output                          "Starting adb."
 adb start-server \
-  || fail     "Failed to start adb server."
+  || fail                       "Failed to start adb server."
 
-cd $work_dir || {
-  error_output "Failed to enter directory:  ${work_dir}"
-  exit 1
-}
+cd $work_dir \
+  || fail                       "Failed to enter directory:  ${work_dir}"
 
-mkdir -p ${backup_dir} || {
-  error_output "Failed to create backup directory:  ${backup_dir}"
-  exit 1
-}
+mkdir -p ${backup_dir} \
+  || fail                       "Failed to create backup directory:  ${backup_dir}"
+
+device_id=$(adb devices | awk '/\tdevice/ {print $1}')
+test "${device_id}" == "${expected_device_id}" \
+  || fail                       "Device id:  '${device_id}'  Expected:  '${expected_device_id}'"
 
 latest_twrp_image_link=$(latest_twrp_image_link)
 twrp_image_file=$(echo "${latest_twrp_image_link}" | sed 's/^.*\///')
