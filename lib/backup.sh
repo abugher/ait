@@ -96,6 +96,7 @@ function restore_data {
     esac
   done
   
+  output        "Rebooting for potential changes from restore operation."
   reboot_device \
     || fail     "Failed to reboot device."
   output        "Restore successful."
