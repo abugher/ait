@@ -15,7 +15,7 @@ Personally, I like to stay with mostly stock software when possible, but I want
 root access, and I also want updates.  I found the process of deploying a stock
 image, then reapplying the recovery image, then rooting again, to be a bit
 tedious, so I have attempted to automate that process with the script
-"update_device".
+"update\_device".
 
 
 Files:
