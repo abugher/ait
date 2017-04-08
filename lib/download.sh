@@ -11,7 +11,7 @@ function download_latest_stock_image {
   if test -e "${image_file}"; then
     output      "Image file already exists.  Skipping download."
   else
-    output      "Use this listing:  https://developers.google.com/android/images"
+    output      "Use this listing:  ${image_listing_page}"
     output      "Get the image for your device, code named:  ${device_code_name}"
     output      "Place the image at:  ${work_dir}/${image_file}"
     prompt      "Hit enter when the image file is in place."
