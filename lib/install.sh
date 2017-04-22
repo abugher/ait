@@ -101,23 +101,23 @@ EOF
     || fail     "Failed to flash boot."
   fastboot flash system system.img \
     || fail     "Failed to flash system."
-  if -e vendor.img; then
+  if test -e vendor.img; then
     fastboot flash vendor vendor.img \
       || fail     "Failed to flash vendor."
   fi
-  fastboot flash cache cache.img \
-    || fail     "Failed to flash cache."
-  prompt        "Overwrite userdata?  [y,N]"
-  case $response in
-    'Y')
-      ;&
-    'y')
-      fastboot flash userdata userdata.img \
-        || fail     "Failed to flash userdata."
-      ;;
-    '*')
-      ;;
-  esac
+#  fastboot flash cache cache.img \
+#    || fail     "Failed to flash cache."
+#  prompt        "Overwrite userdata?  [y,N]"
+#  case $response in
+#    'Y')
+#      ;&
+#    'y')
+#      fastboot flash userdata userdata.img \
+#        || fail     "Failed to flash userdata."
+#      ;;
+#    '*')
+#      ;;
+#  esac
   cd $return_to_dir >/dev/null \
     || fail     "Failed change directory:  ${return_to_dir}"
   output        "Once you provide wifi and Google credentials, Android should start restoring apps."
