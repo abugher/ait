@@ -30,13 +30,13 @@ function latest_twrp_image_link {
 
 
 function download_latest_twrp_image {
-  if test -e "${twrp_image_file}"; then
-    output      "TWRP image file already exists.  Skipping download."
-  else
+#  if test -e "${twrp_image_file}"; then
+#    output      "TWRP image file already exists.  Skipping download."
+#  else
     output      "TWRP download begins."
     wget --referer "${latest_twrp_image_link}" "${latest_twrp_image_link}"
     output      "TWRP download complete."
-  fi
+#  fi
 }
 
 
