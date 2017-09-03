@@ -39,3 +39,11 @@ Files:
   - platforms/ - Per-device-model configuration files.
 
   - profiles/ - Per-individual-device configuration files.
+
+To Do:
+
+  - Cascade error messages well.
+
+  - Unit tests.
+
+  - Download files only when necessary.
