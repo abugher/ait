@@ -42,6 +42,7 @@ function install_image {
   output        "Beginning installation."
 
   grep -Ev ^#'|'^\$ $install_script > $install_script_reduced
+  sed -i "s/\(image-${device_code_name}-\).*\(\.zip\)$/\1*\2/" flash-all-reduced.sh
   cat > "${install_script_expected}" << EOF
 fastboot flash bootloader bootloader-${device_code_name}-*.img
 fastboot reboot-bootloader

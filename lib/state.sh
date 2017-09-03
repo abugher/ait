@@ -8,13 +8,19 @@
 
 
 function reboot_device {
-  if test $(get_state) == 'device'; then
+  state="$(get_state)" || fail "Failed to get state."
+  if test "${state}" == 'device'; then
     adb reboot \
       || fail           "Failed to reboot device."
     wait_for_android
-  else
+  elif 
+    test "${state}" == 'recovery' \
+      || test "${state}" == 'bootloader'
+  then
     boot_device \
       || fail           "Failed to reboot device."
+  else
+    fail                "Unknown state:  ${state}"
   fi
 }
 
