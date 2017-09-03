@@ -47,3 +47,5 @@ To Do:
   - Unit tests.
 
   - Download files only when necessary.
+
+  - Make functions more distinct units.  (Unit tests will help.)
