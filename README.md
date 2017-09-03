@@ -2,11 +2,20 @@ AIT
 
 Android Imaging Tools
 
-This tool kit provides a set of functions to facilitate a software build
-process for Android devices.  Specific actions include downloading various (but
-not arbitrary) images, installing them to the device, doing the same for
-certain apps, such as superuser, setting the device to certain states, such as
-recovery mode, and performing backup/restore operations.
+This is a deployment provisioning toolkit for Android devices.  You can do at
+least these things with it:
+  - Automatically download software.
+    - *Non-trivial to implement for current stock Android download site.  (User
+      interaction currently required.)*
+  - Install images and apps.
+  - Change states as gracefully as possible.
+    - *android (__adb__), bootloader (__fastboot__), and recovery (more __adb__...) modes.*
+    - *Currently getting from fastboot to recovery takes significant user interaction.*
+    - *Booting to recovery from an image could work from fastboot.  __fastboot boot twrp.img__*
+  - Backup and restore.
+    - *__adb backup__ and __adb restore__*
+    - *File format is weird, and hard to extract.*
+    - *Backup and recovery work consistently, lately.*
 
 The primary use case is updating a rooted stock image.  If you don't have root,
 over the air (OTA) updates are more convenient.  If you have a non-stock image,

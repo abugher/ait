@@ -1,5 +1,5 @@
-It seems like it would be better not to unconditionally download certain
-things.  How else should a script verify that it has the latest?  Maybe
-there can be a maximum age on the image file, maybe a day.  Maybe the
-same cache logic used by browsers could be used to obtain a new copy
-only if it has changed since the timestamp on the existing file.
+- Cascade error messages well.
+
+- Unit tests.
+
+- Download files only when necessary.
