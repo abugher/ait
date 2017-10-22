@@ -11,18 +11,17 @@ function download_latest_stock_image {
   if test -e "${image_file}"; then
     output      "Image file already exists.  Skipping download."
   else
-    output      "Use this listing:  ${image_listing_page}"
+    output      "Use this listing:  ${image_listing_page}#${device_code_name}"
     output      "Get the image for your device, code named:  ${device_code_name}"
     output      "Place the image at:  ${work_dir}/${image_file}"
-    prompt      "Hit enter when the image file is in place."
+    prompt      "When the image file is in place, hit enter."
   fi
 }
 
 
 function latest_twrp_image_link {
-  image_list_url="https://dl.twrp.me/${device_code_name}/"
-
-  wget "${image_list_url}" -O - 2>/dev/null \
+  twrp_list_url="https://dl.twrp.me/${device_code_name}/"
+  wget "${twrp_list_url}" -O - 2>/dev/null \
   | awk -F '"' '/\/'"${device_code_name}"'\// {print $2}' \
   | head -n 1 \
   | sed 's/\.html$//;s/^/https:\/\/dl.twrp.me/'
