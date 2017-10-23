@@ -1,0 +1,4 @@
+- 'latestmagisk' instead of 'latestmagisk.zip' gets pushed to device.
+
+- Magisk is unhappy about not being installed, whatever that means.
+  - Might need to see unmodified boot to apply patching.

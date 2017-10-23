@@ -11,7 +11,6 @@ source lib/communication.sh             || {
   echo "ERROR:  Failed to load:  communication.sh" >&2
   exit 1
 }
-source $profile                         || fail "Failed to load profile:  ${profile}"
 source lib/settings.sh                  || fail "Failed to load:  settings.sh"
 source lib/state.sh                     || fail "Failed to load:  state.sh"
 source lib/backup.sh                    || fail "Failed to load:  backup.sh"
@@ -24,16 +23,3 @@ adb kill-server \
 output                          "Starting adb."
 adb start-server \
   || fail                       "Failed to start adb server."
-
-cd $work_dir \
-  || fail                       "Failed to enter directory:  ${work_dir}"
-
-mkdir -p ${backup_dir} \
-  || fail                       "Failed to create backup directory:  ${backup_dir}"
-
-device_id=$(device_id)
-test "${device_id}" == "${expected_device_id}" \
-  || fail                       "Device id:  '${device_id}'  Expected:  '${expected_device_id}'"
-
-latest_twrp_image_link=$(latest_twrp_image_link)
-twrp_image_file=$(echo "${latest_twrp_image_link}" | sed 's/^.*\///')

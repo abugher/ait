@@ -17,16 +17,16 @@ function push_superuser {
 function unpack_image {
   output        "Removing old images."
   test "" == "${image_prefix}" \
-    && fail     "image_prefix is empty.  That's both wrong and dangerous."
-  rm -rf "${image_prefix}"* \
-    || fail     "Failed to remove:  ${image_prefix}*"
+  && fail       "image_prefix is empty.  That's both wrong and dangerous."
+  rm -rvf "${image_prefix}"* \
+  || fail       "Failed to remove:  ${image_prefix}*"
+  pwd
   output        "Unpacking image."
   listing_before=$(ls -1tr)
   unzip -o "${image_file}" \
     || fail     "Failed to unpack image:  ${image_file}"
   listing_after=$(ls -1tr)
   image_dir=$(echo -e "${listing_before}\n${listing_after}" | sort | uniq -u)
-  output        "DEBUG:  image_dir='${image_dir}'"
   output        "Image unpacked."
 }
 
@@ -36,6 +36,7 @@ function install_image {
     || fail     "Failed to enter fastboot mode."
   
   return_to_dir=$PWD
+  output "DEBUG:  image_dir=${image_dir}"
   cd "${image_dir}" \
     || fail     "Failed to enter image directory."
 

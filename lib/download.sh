@@ -43,10 +43,17 @@ function download_latest_twrp_image {
 function download_superuser {
   # The referer hack is for supersu.
   output      "Downloading superuser from ${superuser_link} to ${superuser_file} ."
+#  wget \
+#  -O "${superuser_file}" \
+#  --referer="${superuser_link}" \
+#  "${superuser_link}"
   wget \
-  -O "${superuser_file}" \
+  -N \
   --referer="${superuser_link}" \
   "${superuser_link}"
+
+  ln  -s "${superuser_file}" "${superuser_file}.zip"
+  superuser_file="${superuser_file}.zip"
 }
 
 

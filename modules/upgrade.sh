@@ -6,17 +6,6 @@
 # published by Sam Hocevar. See WTFPL.txt or http://www.wtfpl.net/ for more
 # details.
 
-test $# -lt 1                           && {
-  echo "ERROR:  Specify a profile." >&2
-  exit 1
-}
-profile=profiles/"${1}".sh
-source lib/initialize.sh                || {
-  echo "ERROR:  Failed to load Android Imaging Toolkit."
-  exit 1
-}
-
-
 function main {
   # This main function might look better as in-line code, but the 'fail' alias
   # relies on 'return', which doesn't work in that context.

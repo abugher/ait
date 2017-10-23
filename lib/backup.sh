@@ -7,14 +7,17 @@
 # details.
 
 
-backup_file="${backup_dir}/${start_time}.ab"
-#backup_options="-f '${backup_file}' '-apk -all -nosystem -shared'"
-backup_options="-f '${backup_file}' -apk -all -nosystem -shared"
 
 
 function backup_data {
+  backup_file="${backup_dir}/${start_time}.ab"
+  #backup_options="-f '${backup_file}' '-apk -all -nosystem -shared'"
+  backup_options="-f '${backup_file}' -apk -all -nosystem -shared"
+  mkdir -p ${backup_dir} \
+    || fail     "Failed to create backup directory:  ${backup_dir}"
+
   boot_device \
-    || fail        "Failed to boot device."
+    || fail     "Failed to boot device."
   while true; do
     output      "Running 'adb backup' to this file:  ${backup_file}"
     eval "adb backup ${backup_options}" \
@@ -49,6 +52,8 @@ function backup_data {
 
 
 function restore_data {
+  backup_file="${backup_dir}/${start_time}.ab"
+
   boot_device \
     || fail     "Failed to boot device."
 
