@@ -7,7 +7,7 @@
 # details.
 
 
-function download_latest_stock_image {
+function download_stock_image {
   if test -e "${image_file}"; then
     output      "Image file already exists.  Skipping download."
   else
@@ -28,7 +28,7 @@ function latest_twrp_image_link {
 }
 
 
-function download_latest_twrp_image {
+function download_twrp_image {
   # $twrp_image_file is expected to contain a version string
   if test -e "${twrp_image_file}"; then
     output      "TWRP image file already exists.  Skipping download."
@@ -40,9 +40,9 @@ function download_latest_twrp_image {
 }
 
 
-function download_superuser {
+function download_superuser_zip {
   # The referer hack is for supersu.
-  output      "Downloading superuser from ${superuser_link} to ${superuser_file} ."
+  output        "Downloading superuser from ${superuser_link} to ${superuser_file} ."
 #  wget \
 #  -O "${superuser_file}" \
 #  --referer="${superuser_link}" \
@@ -52,8 +52,8 @@ function download_superuser {
   --referer="${superuser_link}" \
   "${superuser_link}"
 
-  ln  -s "${superuser_file}" "${superuser_file}.zip"
-  superuser_file="${superuser_file}.zip"
+  output        "Creating link to '${superuser_file}' at '${superuser_file}.zip'."
+  ln -fs "${superuser_file}" "${superuser_file}.zip"
 }
 
 

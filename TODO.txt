@@ -1,4 +1,19 @@
-- 'latestmagisk' instead of 'latestmagisk.zip' gets pushed to device.
-
-- Magisk is unhappy about not being installed, whatever that means.
+- Magisk is (sometimes) unhappy about not being installed, whatever that
+  means.
   - Might need to see unmodified boot to apply patching.
+
+- Skip user interaction when installing twrp and superuser.
+  x boot twrp image file
+    - can be done from bootloader
+    - may or may not initialize TWRP
+      - not sure how initialization works
+  o sideload the superuser zip file
+    - still needs the user to hit "adb sideload"
+    - sideload mode is a bit different from normal recovery mode
+      - reboot may not be available
+      - can we change state at all?
+
+- Get rid of the aligned indentation.  It's horrible to try to read.
+
+- Make restore of backups work reliably.  It likes to hang on certain
+  applications.  Maybe we can skip them or something.

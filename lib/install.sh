@@ -7,13 +7,6 @@
 # details.
 
 
-function push_superuser {
-  output        "Pushing ${superuser_file} to /sdcard/ ."
-  adb push "${superuser_file}" /sdcard/ || \
-    fail        "Failed to push ${superuser_file} to /sdcard/ ."
-}
-
-
 function unpack_image {
   output        "Removing old images."
   test "" == "${image_prefix}" \
@@ -32,6 +25,10 @@ function unpack_image {
 
 
 function install_image {
+  download_stock_image \
+    || fail     "Failed to download image."
+  unpack_image \
+    || fail     "Failed to unpack image."
   boot_fastboot \
     || fail     "Failed to enter fastboot mode."
   
@@ -131,6 +128,8 @@ EOF
 
 
 function install_twrp_image {
+  download_twrp_image \
+    || fail     "Failed to download TWRP image."
   output        "Beginning TWRP recovery image installation."
   boot_fastboot \
     || fail     "Failed to enter fastboot."
@@ -152,26 +151,29 @@ function install_twrp_image {
   # the same as booting that image from the recovery volume.  Will it fix the
   # on-device copy if it knows it was loaded from outside the device?  Let's
   # find out.
-  fastboot boot "${twrp_image_file}" \
-    || fail     "Failed to boot recovery image."
+  boot_recovery_image "${twrp_image_file}" \
+    || fail     "Failed to boot recovery image:  ${twrp_image_file}"
   output        "TWRP recovery image installation successful."
 }
 
 
 function install_superuser {
+  download_superuser_zip \
+    || fail     "Failed to download superuser."
   output        "Beginning superuser/supersu installation."
+
   boot_recovery \
     || fail     "Failed to enter recovery."
-  push_superuser \
-    || fail     "Failed to push superuser."
-  prompt        "Tap \"Install\", then hit Enter."
-  output        "Under /sdcard, scroll down and select:"
-  output        "  ${superuser_file}"
-  prompt        "Then hit Enter."
-  prompt        "Swipe to confirm, then hit Enter."
-  prompt        "Wait for install to complete, then hit Enter."
-  reboot_device \
-    || fail     "Failed to reboot device."
+  prompt        "Tap \"Advanced\", then hit Enter."
+  prompt        "Tap \"ADB Sideload\", then hit Enter."
+  prompt        "Swipe to start, then hit Enter."
+  output        "Sideloading:  ${superuser_file}.zip"
+  adb sideload "${superuser_file}.zip" \
+    || fail     "Failed to sideload:  ${superuser_file}.zip"
+#  reboot_device \
+#    || fail     "Failed to reboot device."
+  # Let the system transition from sideload to some other mode, wherein reboot
+  # is available.
 }
 
 

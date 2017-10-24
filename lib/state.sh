@@ -8,26 +8,44 @@
 
 
 function reboot_device {
-  state="$(get_state)" || fail "Failed to get state."
-  if test "${state}" == 'device'; then
-    adb reboot \
-      || fail           "Failed to reboot device."
-    wait_for_android
-  elif 
-    test "${state}" == 'recovery' \
-      || test "${state}" == 'bootloader'
-  then
-    boot_device \
-      || fail           "Failed to reboot device."
-  else
-    fail                "Unknown state:  ${state}"
-  fi
+  state="$(get_state)" \
+    || fail             "Failed to get state."
+  case "${state}" in
+    'device')
+      adb reboot \
+        || fail         "Failed to reboot device."
+      wait_for_android
+      ;;
+    'recovery')
+      # Reboot becomes available shortly after sideload finishes.  Give it a
+      # sec.
+      sleep 1
+      ;&
+    'sideload')
+      fail              "Device is in sideload mode.  Cannot reboot."
+      ;;
+    'bootloader')
+      boot_device \
+        || fail         "Failed to reboot device."
+      ;;
+    *)
+      fail              "Unknown state:  ${state}"
+      ;;
+  esac
 }
 
 
 function boot_device {
-  case "$(get_state)" in
+  state="$(get_state)" \
+    || fail             "Failed to get state."
+  case "${state}" in
+    'sideload')
+      fail              "Device is in sideload mode.  Cannot reboot."
+      ;;
     'recovery')
+      # Reboot becomes available shortly after sideload finishes.  Give it a
+      # sec.
+      sleep 1
       adb reboot \
         || fail         "Failed to reboot device."
       wait_for_android
@@ -48,8 +66,16 @@ function boot_device {
 
 
 function boot_recovery {
-  case "$(get_state)" in
+  state="$(get_state)" \
+    || fail             "Failed to get state."
+  case "${state}" in
+    'sideload')
+      fail              "Device is in sideload mode.  Cannot reboot."
+      ;;
     'recovery')
+      # Reboot becomes available shortly after sideload finishes.  Give it a
+      # sec.
+      sleep 1
       output            "Device is already in recovery mode."
       ;;
     'device')
@@ -66,7 +92,7 @@ function boot_recovery {
         output          "Rebooting device from fastboot to android."
         fastboot reboot \
           || fail       "Failed to reboot from fastboot to android."
-        wait_for_recovery
+        wait_for_android
         output          "Rebooting device from android to recovery."
         adb reboot recovery \
           || fail       "Failed to reboot from android to recovery."
@@ -80,8 +106,17 @@ function boot_recovery {
 }
 
 
+function boot_recovery_image {
+  fastboot boot "${1}" \
+    || fail     "Failed to boot recovery image."
+  wait_for_recovery
+}
+
+
 function reboot_fastboot {
-  if test $(get_state) == 'fastboot'; then
+  state="$(get_state)" \
+    || fail             "Failed to get state."
+  if test "${state}" == 'fastboot'; then
     fastboot reboot-fastboot \
       || fail           "Failed to reboot fastboot."
   else
@@ -92,8 +127,16 @@ function reboot_fastboot {
 
 
 function boot_fastboot {
-  case "$(get_state)" in
+  state="$(get_state)" \
+    || fail             "Failed to get state."
+  case "${state}" in
+    'sideload')
+      fail              "Device is in sideload mode.  Cannot reboot."
+      ;;
     'recovery')
+      # Reboot becomes available shortly after sideload finishes.  Give it a
+      # sec.
+      sleep 1
       adb reboot-bootloader \
         || fail         "Failed to reboot from fastboot to fastboot."
       wait_for_fastboot
@@ -166,7 +209,7 @@ function wait_for_fastboot {
 
 
 function device_id {
-  adb devices | awk '/\tdevice/ {print $1}'
+  adb devices | awk '/\tdevice|recovery/ {print $1}'
   fastboot devices | awk '/\tfastboot/ {print $1}'
 }
 
