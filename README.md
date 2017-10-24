@@ -32,13 +32,22 @@ NO RAGRETS)
 
 Files:
 
-  - upgrade\_device - Script to upgrade a device.  Specify a profile name.
+  - ait - The thing itself, in executable form.  Usage:
+    
+      ait <profile> <module> [module arguments]
 
-  - lib/ - Libraries.
+      Example:  ait aaron upgrade
+
+  - modules/ - High level routines.  Right now there's one called "upgrade",
+    and that's pretty much it.
+
+  - lib/ - Libraries.  The functions used by the relatively short module
+    scripts are defined here.
 
   - platforms/ - Per-device-model configuration files.
 
-  - profiles/ - Per-individual-device configuration files.
+  - profiles/ - Per-individual-device configuration files.  Unique device ID,
+    and personal preferences, if any.
 
 To Do:
 

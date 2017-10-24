@@ -146,8 +146,14 @@ function install_twrp_image {
   # Load new recovery without booting Android.  Then it can initialize itself
   # somehow.  Otherwise Android does something bad to it, and recovery no
   # longer works.  (At least TWRP.)
-  boot_recovery 'direct' \
-    || fail     "Failed to enter recovery."
+  #boot_recovery 'direct' \
+  #  || fail     "Failed to enter recovery."
+  # Maybe we can boot the image file without user interaction.  It should be
+  # the same as booting that image from the recovery volume.  Will it fix the
+  # on-device copy if it knows it was loaded from outside the device?  Let's
+  # find out.
+  fastboot boot "${twrp_image_file}" \
+    || fail     "Failed to boot recovery image."
   output        "TWRP recovery image installation successful."
 }
 
