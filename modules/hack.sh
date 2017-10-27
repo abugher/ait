@@ -12,7 +12,8 @@ function main {
 #  backup_data                           || fail "Failed to backup data."
 #  install_image                         || fail "Failed to install image."
 #  install_twrp_image                    || fail "Failed to install TWRP recovery image."
-#  install_superuser                     || fail "Failed to install superuser."
+  install_superuser                     || fail "Failed to install superuser."
+  boot_device                           || fail "DAMMIT"
 #  restore_data                          || fail "Failed to restore application data."
   output                                "Success!"
 }

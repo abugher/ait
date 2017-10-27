@@ -18,9 +18,7 @@ function reboot_device {
       ;;
     'sideload')
       adb sideload /dev/null
-      # Reboot becomes available shortly after sideload finishes.  Give it a
-      # sec.
-      sleep 1
+      sleep 5
       ;&
     'recovery')
       ;&
@@ -41,9 +39,7 @@ function boot_device {
   case "${state}" in
     'sideload')
       adb sideload /dev/null
-      # Reboot becomes available shortly after sideload finishes.  Give it a
-      # sec.
-      sleep 1
+      sleep 5
       ;&
     'recovery')
       adb reboot \
@@ -71,9 +67,7 @@ function boot_recovery {
   case "${state}" in
     'sideload')
       adb sideload /dev/null
-      # Reboot becomes available shortly after sideload finishes.  Give it a
-      # sec.
-      sleep 1
+      sleep 5
       ;&
     'recovery')
       output            "Device is already in recovery mode."
@@ -132,9 +126,7 @@ function boot_fastboot {
   case "${state}" in
     'sideload')
       adb sideload /dev/null
-      # Reboot becomes available shortly after sideload finishes.  Give it a
-      # sec.
-      sleep 1
+      sleep 5
       ;&
     'recovery')
       adb reboot-bootloader \
