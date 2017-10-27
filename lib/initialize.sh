@@ -20,6 +20,8 @@ source lib/install.sh                   || fail "Failed to load:  install.sh"
 output                          "Killing adb."
 adb kill-server \
   || fail                       "Failed to kill adb server."
+output                          "It's dead.  Waiting, then starting again..."
+sleep 5
 output                          "Starting adb."
 adb start-server \
   || fail                       "Failed to start adb server."
