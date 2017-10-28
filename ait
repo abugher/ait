@@ -30,6 +30,11 @@ if ! source lib/initialize.sh; then
   exit 1
 fi
 
+initialize || {
+  echo "ERROR:  Failed to initiallize Android Imaging Toolkit." >&2
+  exit 1
+}
+
 profile_name="${1}"
 shift
 

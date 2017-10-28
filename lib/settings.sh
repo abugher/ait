@@ -17,5 +17,3 @@ phh_superuser_link='https://superuser.phh.me/superuser.zip'
 # Observed to work for v14.0.  Monitor for updates or lack thereof.
 magisksu_link='http://tiny.cc/latestmagisk'
 superuser_link="${magisksu_link}"
-
-
