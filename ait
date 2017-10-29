@@ -6,6 +6,8 @@
 # published by Sam Hocevar. See WTFPL.txt or http://www.wtfpl.net/ for more
 # details.
 
+export start_time="$(date "+%Y-%m-%d_%H:%M:%S")"
+
 if ! self_file=$(readlink -m "${0}"); then
   echo "ERROR:  Failed to find myself!" >&2
   exit 1

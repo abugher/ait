@@ -19,7 +19,7 @@ function test_f {
       continue
     fi
 
-    echo "${test_file}"
+    #echo "${test_file}"
 
     let test_count++
     sc=0
@@ -28,24 +28,29 @@ function test_f {
 
     while read command; do
       let tc++
-      if eval "${command}" >/dev/null 2>&1; then
-        echo "Pass:  ${test_count}"
+      if eval "${command}" \
+        > /tmp/test."${self_name}"."${test_count}"."${tc}" 2>&1; then
         let sc++
+        echo "Check ${tc}:  pass"
       else
-        echo "Fail:  ${test_count}"
         let fc++
+        echo "Check ${tc}:  fail"
       fi
     done < "${test_file}"
+    echo "Checks passed:  ${sc}/${tc}"
+    echo "Checks failed:  ${fc}/${tc}"
 
     if test '0' == "${fc}"; then
       let success_count++
+      echo "Test ${test_count}:  pass"
     else
       let failure_count++
+      echo "Test ${test_count}:  fail"
     fi
-
-    echo "Success:  ${sc}/${tc}"
-    echo "Failures: ${fc}/${tc}"
   done
+
+  echo "Tests passed:  ${success_count}/${test_count}"
+  echo "Tests failed:  ${failure_count}/${test_count}"
 }
 
 time test_f

@@ -1,0 +1,30 @@
+count_android_devices 
+device_id 
+boot_device
+test "$( get_state )" == 'device'
+boot_device
+test "$( get_state )" == 'device'
+reboot_device 
+test "$( get_state )" == 'device'
+boot_fastboot  
+test "$( get_state )" == 'bootloader'
+boot_fastboot  
+test "$( get_state )" == 'bootloader'
+reboot_fastboot 
+test "$( get_state )" == 'bootloader'
+boot_recovery 
+test "$( get_state )" == 'recovery'
+boot_recovery 
+test "$( get_state )" == 'recovery'
+boot_recovery_image 
+test "$( get_state )" == 'recovery'
+boot_device
+test "$( get_state )" == 'device'
+boot_recovery 
+test "$( get_state )" == 'recovery'
+boot_fastboot  
+test "$( get_state )" == 'bootloader'
+boot_device
+test "$( get_state )" == 'device'
+count_fastboot_devices 
+test "$( get_state )" == 'device'

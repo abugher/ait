@@ -1,0 +1,2 @@
+initialize_adb      # This already ran when ait loaded, so this is the second invokation.
+

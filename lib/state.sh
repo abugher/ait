@@ -37,6 +37,9 @@ function boot_device {
   state="$(get_state)" \
     || fail             "Failed to get state."
   case "${state}" in
+    'device')
+      output            "Device is already booted."
+      ;;
     'sideload')
       adb sideload /dev/null
       sleep 5
@@ -45,9 +48,6 @@ function boot_device {
       adb reboot \
         || fail         "Failed to reboot device."
       wait_for_android
-      ;;
-    'device')
-      output            "Device is already booted."
       ;;
     'bootloader')
       fastboot reboot \
@@ -153,7 +153,7 @@ function wait_for_android {
   output        "Waiting for adb..."
   while 
     adb_count=$(count_android_devices)
-    ! test "${adb_count}" -eq 1
+    ! test "${adb_count}" -ge 1
   do
     sleep 1
   done
@@ -178,7 +178,7 @@ function wait_for_recovery {
   output        "Waiting for recovery..."
   while 
     adb_count=$(count_android_devices)
-    ! test "${adb_count}" -eq 1
+    ! test "${adb_count}" -ge 1
   do
     output      "Device not yet detected."
     sleep 1
@@ -191,7 +191,7 @@ function wait_for_fastboot {
   output        "Waiting for fastboot..."
   while 
     fastboot_count=$(count_fastboot_devices)
-    ! test "${fastboot_count}" -eq 1
+    ! test "${fastboot_count}" -ge 1
   do
     output      "Device not yet detected."
     sleep 1
@@ -218,19 +218,19 @@ function count_fastboot_devices {
 
 function get_state {
   while true; do
-    if test 1 == $(count_android_devices); then
+    if test 1 -le $(count_android_devices); then
       adb get-state
       break
-    elif test 1 == $(count_fastboot_devices); then
+    elif test 1 -le $(count_fastboot_devices); then
       echo bootloader
       break
     else
-      prompt            "Device is missing.  Jiggle the cables or something.  Try again or quit?  [T,q]"
+      prompt "Device is missing.  Jiggle the cables or something.  Try again or quit?  [T,q]"
       case $response in
         'Q')
           ;&
         'q')
-          fail          "Device missing."
+          fail "Device missing."
           ;;
         *)
           ;;

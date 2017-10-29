@@ -6,8 +6,6 @@
 # published by Sam Hocevar. See WTFPL.txt or http://www.wtfpl.net/ for more
 # details.
 
-start_time="$(date "+%Y-%m-%d_%H:%M:%S")"
-
 
 function initialize {
   cd "${self_path}" || {
@@ -29,6 +27,7 @@ function initialize {
 
   cd "${old_path}"              || fail "Failed to return to:  '${old_path}'"
 }
+
 
 function initialize_adb {
   output                        "Killing adb."
