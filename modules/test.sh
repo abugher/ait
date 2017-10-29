@@ -19,38 +19,45 @@ function test_f {
       continue
     fi
 
-    #echo "${test_file}"
+    printf "Check %03d:       pass\n" ${tc}
+    echo "Next test:     $(basename "${test_file}")"
 
     let test_count++
     sc=0
     fc=0
     tc=0
 
+    commands=()
     while read command; do
+      commands+=("${command}")
+    done < "${test_file}"
+    
+    for command in "${commands[@]}"; do
       let tc++
       if eval "${command}" \
         > /tmp/test."${self_name}"."${test_count}"."${tc}" 2>&1; then
         let sc++
-        echo "Check ${tc}:  pass"
+        printf "Check %03d:       pass\n" ${tc}
       else
         let fc++
-        echo "Check ${tc}:  fail"
+        printf "Check %03d:       fail\n" ${tc}
       fi
-    done < "${test_file}"
-    echo "Checks passed:  ${sc}/${tc}"
-    echo "Checks failed:  ${fc}/${tc}"
+    done
+    printf "Checks passed:   %03d/%03d\n" ${sc} ${tc}
+    printf "Checks failed:   %03d/%03d\n" ${fc} ${tc}
 
     if test '0' == "${fc}"; then
       let success_count++
-      echo "Test ${test_count}:  pass"
+      printf "Test  %03d:       pass\n" ${tc}
     else
       let failure_count++
-      echo "Test ${test_count}:  fail"
+      printf "Test  %03d:       fail\n" ${tc}
     fi
   done
 
-  echo "Tests passed:  ${success_count}/${test_count}"
-  echo "Tests failed:  ${failure_count}/${test_count}"
+  printf "Tests passed:   %03d/%03d\n" ${sc} ${tc}
+  printf "Tests failed:   %03d/%03d\n" ${fc} ${tc}
 }
+
 
 time test_f

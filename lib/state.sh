@@ -101,9 +101,30 @@ function boot_recovery {
 
 
 function boot_recovery_image {
-  fastboot boot "${1}" \
-    || fail     "Failed to boot recovery image."
-  wait_for_recovery
+  state="$(get_state)" \
+    || fail             "Failed to get state."
+  case "${state}" in
+    'sideload')
+      adb sideload /dev/null
+      sleep 5
+      ;&
+    'recovery')
+      ;&
+    'device')
+      output            "Rebooting device from device to fastboot."
+      boot_fastboot \
+        || fail         "Failed to boot fastboot."
+      ;&
+    'bootloader')
+      output            "Rebooting device from fastboot to recovery."
+      fastboot boot "${1}" \
+        || fail         "Failed to boot recovery image."
+      wait_for_recovery
+      ;;
+    *)
+      fail              "Unknown device state:  '${state}'"
+      ;;
+  esac
 }
 
 
