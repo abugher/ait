@@ -16,7 +16,7 @@ boot_recovery
 test "$( get_state )" == 'recovery'
 boot_recovery 
 test "$( get_state )" == 'recovery'
-boot_recovery_image 
+boot_recovery_image "${twrp_image_file}"
 test "$( get_state )" == 'recovery'
 boot_device
 test "$( get_state )" == 'device'
@@ -26,5 +26,16 @@ boot_fastboot
 test "$( get_state )" == 'bootloader'
 boot_device
 test "$( get_state )" == 'device'
+boot_fastboot  
+test "$( get_state )" == 'bootloader'
+boot_device
+test "$( get_state )" == 'device'
+boot_recovery_image "${twrp_image_file}"
+test "$( get_state )" == 'recovery'
+boot_device
+test "$( get_state )" == 'device'
+boot_recovery_image "${twrp_image_file}"
+test "$( get_state )" == 'recovery'
 count_fastboot_devices 
+boot_device
 test "$( get_state )" == 'device'

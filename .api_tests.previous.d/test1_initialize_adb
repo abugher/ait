@@ -1,2 +1,2 @@
-initialize_adb      # This already ran when ait loaded, so this is the second invokation.
-
+initialize_adb          # This already ran when ait loaded, so this is the second invokation.
+initialize_adb          # You can run twice in a row, right?
