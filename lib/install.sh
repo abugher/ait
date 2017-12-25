@@ -8,12 +8,6 @@
 
 
 function unpack_image {
-  output        "Removing old images."
-  test "" == "${image_prefix}" \
-  && fail       "image_prefix is empty.  That's both wrong and dangerous."
-  rm -rvf "${image_prefix}"* \
-  || fail       "Failed to remove:  ${image_prefix}*"
-  pwd
   output        "Unpacking image."
   listing_before=$(ls -1tr)
   unzip -o "${image_file}" \
@@ -21,6 +15,12 @@ function unpack_image {
   listing_after=$(ls -1tr)
   image_dir=$(echo -e "${listing_before}\n${listing_after}" | sort | uniq -u)
   output        "Image unpacked."
+  output        "Removing this image and any other old images."
+  mkdir -p old_images
+  test "" == "${image_prefix}" \
+    && fail     "image_prefix is empty.  That's both wrong and dangerous."
+  pwd
+  output        "Successfully removed old images."
 }
 
 
@@ -39,9 +39,13 @@ function install_image {
 
   output        "Beginning installation."
 
-  grep -Ev ^#'|'^\$ $install_script > $install_script_reduced
+  grep -Ev ^#'|'^\$ "${install_script}" > "${install_script_reduced}"
   sed -i "s/\(image-${device_code_name}-\).*\(\.zip\)$/\1*\2/" flash-all-reduced.sh
   cat > "${install_script_expected}" << EOF
+if ! grep -q dtbo.sig \$(which fastboot); then
+  echo "fastboot too old"
+  exit 1
+fi
 fastboot flash bootloader bootloader-${device_code_name}-*.img
 fastboot reboot-bootloader
 sleep 5
@@ -122,8 +126,10 @@ EOF
   output        "Once you provide wifi and Google credentials, Android should start restoring apps."
   output        "Enable USB debugging to continue."
   # Next step does not complete until USB debugging comes online.
-  boot_device \
-    || fail     "Failed to reboot from fastboot to android."
+#  boot_device \
+#    || fail     "Failed to reboot from fastboot to android."
+  mv "${image_prefix}"* old_images/ \
+    || fail     "Failed to remove:  ${image_prefix}*"
 }
 
 
