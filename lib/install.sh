@@ -176,6 +176,7 @@ function install_superuser {
   prompt        "Tap \"ADB Sideload\", then hit Enter."
   prompt        "Swipe to start, then hit Enter."
   output        "Sideloading:  ${superuser_file}.zip"
+  sleep 2
   adb sideload "${superuser_file}.zip" \
     || fail     "Failed to sideload:  ${superuser_file}.zip"
 #  reboot_device \

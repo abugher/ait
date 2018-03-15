@@ -49,7 +49,6 @@ function download_superuser_zip {
 #  "${superuser_link}"
   wget \
   -N \
-  --referer="${superuser_link}" \
   "${superuser_link}"
 
   output        "Creating link to '${superuser_file}' at '${superuser_file}.zip'."
