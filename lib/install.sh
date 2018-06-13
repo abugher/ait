@@ -128,7 +128,7 @@ EOF
   # Next step does not complete until USB debugging comes online.
 #  boot_device \
 #    || fail     "Failed to reboot from fastboot to android."
-  # Don't fail.  There might be no old imagex.
+  # Don't fail.  There might be no old images.
   mv "${image_prefix}"*.zip old_images/
   rm -rf "${image_prefix}"* \
     || fail     "Failed to remove:  ${image_prefix}*"
