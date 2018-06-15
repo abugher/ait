@@ -173,12 +173,14 @@ function install_superuser {
   boot_recovery \
     || fail     "Failed to enter recovery."
   prompt        "Tap \"Advanced\", then hit Enter."
-  prompt        "Tap \"ADB Sideload\", then hit Enter."
-  prompt        "Swipe to start, then hit Enter."
-  output        "Sideloading:  ${superuser_file}.zip"
-  sleep 2
-  adb sideload "${superuser_file}.zip" \
-    || fail     "Failed to sideload:  ${superuser_file}.zip"
+  # This fails sometimes, but will work on retry.  No clue why.
+  for attempt in 1 2 3; do
+    prompt        "Tap \"ADB Sideload\", then hit Enter."
+    prompt        "Swipe to start, then hit Enter."
+    output        "Sideloading:  ${superuser_file}.zip"
+    sleep 3
+    adb sideload "${superuser_file}.zip" && break
+  done || fail  "Failed to sideload:  ${superuser_file}.zip"
 #  reboot_device \
 #    || fail     "Failed to reboot device."
   # Let the system transition from sideload to some other mode, wherein reboot
