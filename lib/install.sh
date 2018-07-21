@@ -8,12 +8,16 @@
 
 
 function unpack_image {
+  rm -rf "${unpack_dir}"/* \
+    || fail     "Failed to remove stale unpacked contents."
   output        "Unpacking image."
-  listing_before=$(ls -1tr)
-  unzip -o "${image_file}" \
+  unzip -o -d "${unpack_dir}" "${image_file}" \
     || fail     "Failed to unpack image:  ${image_file}"
-  listing_after=$(ls -1tr)
-  image_dir=$(echo -e "${listing_before}\n${listing_after}" | sort | uniq -u)
+  #image_dir="${unpack_dir}"/*
+  image_dir="$(ls -1d "${unpack_dir}"/*)"
+  if grep -q '\*' <<< "${image_dir}"; then
+    fail        "Unpacking the image did not seem to create any new files."
+  fi
   output        "Image unpacked."
   output        "Removing this image and any other old images."
   mkdir -p old_images
@@ -33,7 +37,6 @@ function install_image {
     || fail     "Failed to enter fastboot mode."
   
   return_to_dir=$PWD
-  output "DEBUG:  image_dir=${image_dir}"
   cd "${image_dir}" \
     || fail     "Failed to enter image directory."
 
@@ -66,7 +69,21 @@ EOF
 
   if ! diff "${install_script_reduced}" "${install_script_expected}" >/dev/null; then
     error_output        "The install script changed.  Review the new script (${install_script}), then edit this script appropriately."
-    return 1
+    output              "Diff:"
+    diff "${install_script_reduced}" "${install_script_expected}"
+    output              "End of diff."
+    prompt              "Continue?  [y/N]"
+    case $response in
+      'Y')
+        ;&
+      'y')
+        # Do nothing.  Just don't fail.
+        true
+        ;;
+      '*')
+        fail            "Exiting."
+        ;;
+    esac
   fi
 
   output        "Flashing bootloader."
@@ -124,8 +141,7 @@ EOF
   cd $return_to_dir >/dev/null \
     || fail     "Failed change directory:  ${return_to_dir}"
   output        "Once you provide wifi and Google credentials, Android should start restoring apps."
-  output        "Enable USB debugging to continue."
-  # Next step does not complete until USB debugging comes online.
+  output        "Enable USB debugging to continue." # Next step does not complete until USB debugging comes online.
 #  boot_device \
 #    || fail     "Failed to reboot from fastboot to android."
   # Don't fail.  There might be no old images.
@@ -174,12 +190,40 @@ function install_superuser {
     || fail     "Failed to enter recovery."
   prompt        "Tap \"Advanced\", then hit Enter."
   # This fails sometimes, but will work on retry.  No clue why.
-  for attempt in 1 2 3; do
-    prompt        "Tap \"ADB Sideload\", then hit Enter."
-    prompt        "Swipe to start, then hit Enter."
-    output        "Sideloading:  ${superuser_file}.zip"
+  while true; do
+    prompt      "Tap \"ADB Sideload\", then hit Enter."
+    prompt      "Swipe to start, then hit Enter."
+    output      "Sideloading:  ${superuser_file}.zip"
     sleep 3
-    adb sideload "${superuser_file}.zip" && break
+    if adb sideload "${superuser_file}.zip"; then
+      break
+    else
+      output    "Sideload status:  failed."
+      prompt    "Try again?  [Y/n]"
+      case $response in
+        'N')
+          ;&
+        'n')
+          true
+          ;;
+        '*')
+          continue
+          ;;
+      esac
+
+      prompt    "Continue anyway?  [y/N]"
+      case $response in
+        'Y')
+          ;&
+        'y')
+          break
+          ;;
+        '*')
+          fail  "Failed to sideload:  ${superuser_file}.zip"
+          ;;
+      esac
+
+    fi
   done || fail  "Failed to sideload:  ${superuser_file}.zip"
 #  reboot_device \
 #    || fail     "Failed to reboot device."

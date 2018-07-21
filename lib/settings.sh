@@ -3,6 +3,7 @@ superuser_file='latestmagisk'
 install_script='flash-all.sh'
 install_script_reduced='flash-all-reduced.sh'
 install_script_expected='flash-all-expected.sh'
+unpack_dir="${work_dir}/unpack"
 # Set later; declared here for global scope:
 image_dir=
 
