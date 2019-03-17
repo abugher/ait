@@ -9,11 +9,11 @@
 function upgrade {
   # This main function might look better as in-line code, but the 'fail' alias
   # relies on 'return', which doesn't work in that context.
-#  backup_data                           || fail "Failed to backup data."
-  install_image                         || fail "Failed to install image."
-  install_twrp_image                    || fail "Failed to install TWRP recovery image."
+  #backup_data                           || fail "Failed to backup data."
+  #install_image                         || fail "Failed to install image."
+  #install_twrp_image                    || fail "Failed to install TWRP recovery image."
   install_superuser                     || fail "Failed to install superuser."
-#  restore_data                          || fail "Failed to restore application data."
+  #restore_data                          || fail "Failed to restore application data."
   output                                "Success!"
 }
 

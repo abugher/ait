@@ -210,19 +210,6 @@ function install_superuser {
           continue
           ;;
       esac
-
-      prompt    "Continue anyway?  [y/N]"
-      case $response in
-        'Y')
-          ;&
-        'y')
-          break
-          ;;
-        '*')
-          fail  "Failed to sideload:  ${superuser_file}.zip"
-          ;;
-      esac
-
     fi
   done || fail  "Failed to sideload:  ${superuser_file}.zip"
 #  reboot_device \
