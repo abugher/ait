@@ -1,4 +1,4 @@
-work_dir=~/ait
+work_dir=~/.ait
 superuser_file='latestmagisk'
 install_script='flash-all.sh'
 install_script_reduced='flash-all-reduced.sh'
