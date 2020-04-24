@@ -6,7 +6,7 @@
 # published by Sam Hocevar. See WTFPL.txt or http://www.wtfpl.net/ for more
 # details.
 
-function upgrade {
+function hack {
   # This main function might look better as in-line code, but the 'fail' alias
   # relies on 'return', which doesn't work in that context.
   #backup_data                           || fail "Failed to backup data."
@@ -17,4 +17,4 @@ function upgrade {
   output                                "Success!"
 }
 
-time upgrade
+time hack
